@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models.user import User
+from models.city import City
 from schemas.user import UserCreate, UserResponse, UserLogin, Token
 from core.security import hash_password, verify_password, create_access_token
 from core.security import get_current_user
-
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -28,18 +28,11 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # auto-assign one unclaimed city
+    unclaimed_city = db.query(City).filter(City.owner_id.is_(None)).first()
+    if unclaimed_city:
+        unclaimed_city.owner_id = new_user.id
+        db.commit()
+
     return new_user
-
-
-@router.post("/login", response_model=Token)
-def login(credentials: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == credentials.email).first()
-    if not user or not verify_password(credentials.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    token = create_access_token(data={"sub": str(user.id)})
-    return Token(access_token=token)
-
-@router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
-    return current_user

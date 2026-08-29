@@ -1,14 +1,12 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
-class TeamCreate(BaseModel):
-    name: str
-    guild_id: int
-
-class TeamResponse(BaseModel):
+class CityResponse(BaseModel):
     id: int
     name: str
-    guild_id: int
+    subject_cluster: str
+    owner_id: Optional[int] = None
     created_at: datetime
 
     class Config:
