@@ -1,18 +1,27 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+
 from database import get_db
+from core.security import get_current_user
 from models.city import City
-from schemas.city import CityResponse
+from models.user import User
 
 router = APIRouter(prefix="/cities", tags=["cities"])
 
-@router.get("/", response_model=List[CityResponse])
-def list_cities(db: Session = Depends(get_db)):
-    return db.query(City).order_by(City.id).all()
 
-@router.get("/mine", response_model=CityResponse)
-def my_city(current_user_id: int, db: Session = Depends(get_db)):
-    # temporary query-param version; swap to JWT-based current_user once wired in
-    city = db.query(City).filter(City.owner_id == current_user_id).first()
-    return city
+@router.get("/mine")
+def get_my_city(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    city = db.query(City).filter(City.owner_id == current_user.id).first()
+
+    if not city:
+        raise HTTPException(status_code=404, detail="You don't own a city yet")
+
+    return {
+        "id": city.id,
+        "name": city.name,
+        "cluster": city.cluster,
+        "owner_id": city.owner_id,
+    }

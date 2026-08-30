@@ -2,7 +2,6 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User
@@ -28,9 +27,15 @@ def create_access_token(data: dict) -> str:
 def decode_access_token(token: str) -> dict:
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+bearer_scheme = HTTPBearer()
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    token = credentials.credentials
     try:
         payload = decode_access_token(token)
         user_id = int(payload.get("sub"))
