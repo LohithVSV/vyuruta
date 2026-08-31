@@ -22,6 +22,6 @@ def get_my_city(
     return {
         "id": city.id,
         "name": city.name,
-        "cluster": city.cluster,
+        "subject_cluster": city.subject_cluster,
         "owner_id": city.owner_id,
     }

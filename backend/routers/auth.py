@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from database import get_db
 from models.user import User
 from models.city import City
@@ -29,7 +30,12 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    unclaimed_city = db.query(City).filter(City.owner_id.is_(None)).first()
+    unclaimed_city = (
+        db.query(City)
+        .filter(City.owner_id.is_(None))
+        .order_by(func.random())
+        .first()
+    )
     if unclaimed_city:
         unclaimed_city.owner_id = new_user.id
         db.commit()
