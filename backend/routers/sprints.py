@@ -6,6 +6,7 @@ from core.security import get_current_user
 from models.user import User
 from models.battle import Battle
 from models.sprint import Sprint
+from models.tribute import Tribute
 from schemas.sprint import SprintResponse
 
 router = APIRouter(prefix="/sprints", tags=["sprints"])
@@ -23,6 +24,27 @@ def _get_sprint_or_404(sprint_id: int, db: Session) -> Sprint:
 def _require_participant(sprint: Sprint, battle: Battle, current_user: User):
     if current_user.id not in (battle.challenger_id, battle.opponent_id):
         raise HTTPException(status_code=403, detail="You're not part of this battle")
+
+
+def _pay_currency_reward(winner: User, db: Session):
+    """Pay the winner their reward, siphoning tax off the top for every
+    active tribute debt this winner still owes to someone else."""
+    reward = WIN_CURRENCY_REWARD
+
+    debts = (
+        db.query(Tribute)
+        .filter(Tribute.debtor_id == winner.id, Tribute.active == True)  # noqa: E712
+        .all()
+    )
+    for debt in debts:
+        tax_amount = max(1, (reward * debt.tax_rate_percent) // 100)
+        tax_amount = min(tax_amount, reward)
+        creditor = db.query(User).filter(User.id == debt.creditor_id).first()
+        if creditor:
+            creditor.currency += tax_amount
+            reward -= tax_amount
+
+    winner.currency += reward
 
 
 @router.get("/mine", response_model=list[SprintResponse])
@@ -85,12 +107,42 @@ def confirm_win(
     db.commit()
     db.refresh(sprint)
 
-    winner = db.query(User).filter(User.id == sprint.winner_id).first()
-    winner.currency += WIN_CURRENCY_REWARD
+    winner_id = sprint.winner_id
+    loser_id = battle.opponent_id if winner_id == battle.challenger_id else battle.challenger_id
 
-    # If the challenger won, they take the city. If the defender won, nothing moves.
-    if sprint.winner_id == battle.challenger_id:
-        battle.city.owner_id = battle.challenger_id
+    winner = db.query(User).filter(User.id == winner_id).first()
+    _pay_currency_reward(winner, db)
+
+    # Did this win clear the winner's own debt to the loser? (a successful rematch)
+    cleared_debt = (
+        db.query(Tribute)
+        .filter(
+            Tribute.debtor_id == winner_id,
+            Tribute.creditor_id == loser_id,
+            Tribute.active == True,  # noqa: E712
+        )
+        .first()
+    )
+    if cleared_debt:
+        cleared_debt.active = False
+        battle.status = "resolved"
+    else:
+        # Does the loser already owe the winner tax? Losing again escalates it.
+        existing_debt = (
+            db.query(Tribute)
+            .filter(
+                Tribute.debtor_id == loser_id,
+                Tribute.creditor_id == winner_id,
+                Tribute.active == True,  # noqa: E712
+            )
+            .first()
+        )
+        if existing_debt:
+            existing_debt.tax_rate_percent += 1
+            battle.status = "resolved"
+        else:
+            # First-time loss to this opponent — loser must choose pay vs tax.
+            battle.status = "awaiting_tribute"
 
     db.commit()
     db.refresh(sprint)
@@ -113,7 +165,6 @@ def dispute_win(
     if current_user.id == sprint.claimed_winner_id:
         raise HTTPException(status_code=400, detail="You can't dispute your own claim")
 
-    # Reset back to pending so either player can claim again
     sprint.status = "pending"
     sprint.claimed_winner_id = None
     db.commit()

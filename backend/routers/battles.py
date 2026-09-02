@@ -8,9 +8,13 @@ from models.user import User
 from models.city import City
 from models.battle import Battle
 from models.sprint import Sprint
+from models.tribute import Tribute
 from schemas.battle import BattleCreate, BattleResponse
+from schemas.tribute import TributeChoice
 
 router = APIRouter(prefix="/battles", tags=["battles"])
+
+TRIBUTE_PAYMENT_AMOUNT = 2000
 
 
 @router.post("", response_model=BattleResponse)
@@ -105,6 +109,48 @@ def reject_battle(
         raise HTTPException(status_code=400, detail=f"Battle is already {battle.status}")
 
     battle.status = "rejected"
+    db.commit()
+    db.refresh(battle)
+    return battle
+
+
+@router.post("/{battle_id}/tribute", response_model=BattleResponse)
+def resolve_tribute(
+    battle_id: int,
+    choice_data: TributeChoice,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    battle = db.query(Battle).filter(Battle.id == battle_id).first()
+    if not battle:
+        raise HTTPException(status_code=404, detail="Battle not found")
+
+    if battle.status != "awaiting_tribute":
+        raise HTTPException(status_code=400, detail="This battle has no pending tribute decision")
+
+    sprint = db.query(Sprint).filter(Sprint.battle_id == battle.id).first()
+    winner_id = sprint.winner_id
+    loser_id = battle.opponent_id if winner_id == battle.challenger_id else battle.challenger_id
+
+    if current_user.id != loser_id:
+        raise HTTPException(status_code=403, detail="Only the loser of the sprint chooses tribute terms")
+
+    loser = db.query(User).filter(User.id == loser_id).first()
+    winner = db.query(User).filter(User.id == winner_id).first()
+
+    if choice_data.choice == "pay":
+        if loser.currency < TRIBUTE_PAYMENT_AMOUNT:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Not enough currency to pay tribute ({TRIBUTE_PAYMENT_AMOUNT} needed) — choose the tax option instead",
+            )
+        loser.currency -= TRIBUTE_PAYMENT_AMOUNT
+        winner.currency += TRIBUTE_PAYMENT_AMOUNT
+    else:  # "tax"
+        new_debt = Tribute(debtor_id=loser.id, creditor_id=winner.id, tax_rate_percent=1, active=True)
+        db.add(new_debt)
+
+    battle.status = "resolved"
     db.commit()
     db.refresh(battle)
     return battle
