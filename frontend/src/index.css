@@ -1,0 +1,26 @@
+:root {
+  --ink: #0D1117;
+  --ink-raised: #151B23;
+  --ink-line: #232B36;
+  --agni: #FF6B35;
+  --agni-dim: #7A3A1F;
+  --jal: #1FA2B0;
+  --jal-dim: #1A5A61;
+  --text: #F2EFE6;
+  --text-dim: #8A93A0;
+
+  --font-display: "Bebas Neue", sans-serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { min-height: 100vh; }

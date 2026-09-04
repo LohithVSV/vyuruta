@@ -1,0 +1,58 @@
+.hud {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.hud-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--ink-line);
+}
+
+.hud-wordmark {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+.hud-factions { display: flex; gap: 12px; }
+
+.faction-tag {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 3px;
+}
+
+.faction-agni { background: var(--agni-dim); color: var(--agni); }
+.faction-jal { background: var(--jal-dim); color: var(--jal); }
+
+.hud-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  overflow: hidden;
+}
+
+.hud-panel {
+  border-left: 1px solid var(--ink-line);
+  padding: 24px;
+  background: var(--ink-raised);
+}
+
+.panel-block { margin-bottom: 24px; }
+
+.panel-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.panel-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.5px;
+}
