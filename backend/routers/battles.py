@@ -4,6 +4,7 @@ from sqlalchemy import or_
 
 from database import get_db
 from core.security import get_current_user
+from core.game_constants import TRIBUTE_PAYMENT_BY_DIFFICULTY, TRIBUTE_TAX_RATE_BY_DIFFICULTY
 from models.user import User
 from models.city import City
 from models.battle import Battle
@@ -11,10 +12,9 @@ from models.sprint import Sprint
 from models.tribute import Tribute
 from schemas.battle import BattleCreate, BattleResponse
 from schemas.tribute import TributeChoice
+from routers.problems import pick_random_problem
 
 router = APIRouter(prefix="/battles", tags=["battles"])
-
-TRIBUTE_PAYMENT_AMOUNT = 2000
 
 
 @router.post("", response_model=BattleResponse)
@@ -37,6 +37,7 @@ def propose_battle(
         challenger_id=current_user.id,
         opponent_id=city.owner_id,
         city_id=city.id,
+        difficulty=battle_data.difficulty,
         proposed_time=battle_data.proposed_time,
         status="pending",
     )
@@ -85,7 +86,13 @@ def accept_battle(
     db.commit()
     db.refresh(battle)
 
-    new_sprint = Sprint(battle_id=battle.id)
+    # Pick a problem matching the difficulty the challenger chose.
+    problem = pick_random_problem(db, difficulty=battle.difficulty)
+    new_sprint = Sprint(
+        battle_id=battle.id,
+        problem_id=problem.id if problem else None,
+        problem_title=problem.title if problem else "No problem seeded yet for this difficulty",
+    )
     db.add(new_sprint)
     db.commit()
 
@@ -138,16 +145,19 @@ def resolve_tribute(
     loser = db.query(User).filter(User.id == loser_id).first()
     winner = db.query(User).filter(User.id == winner_id).first()
 
+    payment_amount = TRIBUTE_PAYMENT_BY_DIFFICULTY[battle.difficulty]
+
     if choice_data.choice == "pay":
-        if loser.currency < TRIBUTE_PAYMENT_AMOUNT:
+        if loser.currency < payment_amount:
             raise HTTPException(
                 status_code=400,
-                detail=f"Not enough currency to pay tribute ({TRIBUTE_PAYMENT_AMOUNT} needed) — choose the tax option instead",
+                detail=f"Not enough currency to pay tribute ({payment_amount} needed) — choose the tax option instead",
             )
-        loser.currency -= TRIBUTE_PAYMENT_AMOUNT
-        winner.currency += TRIBUTE_PAYMENT_AMOUNT
-    else:  # "tax"
-        new_debt = Tribute(debtor_id=loser.id, creditor_id=winner.id, tax_rate_percent=1, active=True)
+        loser.currency -= payment_amount
+        winner.currency += payment_amount
+    else:  # "tax" — ongoing tax on the loser's future XP earnings
+        rate = TRIBUTE_TAX_RATE_BY_DIFFICULTY[battle.difficulty]
+        new_debt = Tribute(debtor_id=loser.id, creditor_id=winner.id, tax_rate_percent=rate, active=True)
         db.add(new_debt)
 
     battle.status = "resolved"

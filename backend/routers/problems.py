@@ -6,6 +6,7 @@ from models.problem import Problem
 from models.testcase import TestCase
 from models.topic import Topic
 from schemas.problem import ProblemCreate, ProblemOut, ProblemDetailOut, TestCaseOut
+import random
 
 router = APIRouter(prefix="/problems", tags=["problems"])
 
@@ -81,8 +82,6 @@ def get_problem(problem_id: int, db: Session = Depends(get_db)):
         **ProblemOut.model_validate(problem).model_dump(),
         sample_test_cases=[TestCaseOut.model_validate(tc) for tc in samples],
     )
-
-import random
 
 
 def pick_random_problem(db: Session, difficulty: Optional[int] = None, topic_names: Optional[List[str]] = None) -> Optional[Problem]:

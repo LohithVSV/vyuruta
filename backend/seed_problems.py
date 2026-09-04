@@ -1,5 +1,6 @@
 """
 Paste problems here as dicts and run: python seed_problems.py
+difficulty: 1 = easy, 2 = medium, 3 = hard
 """
 from database import SessionLocal
 from models.problem import Problem
@@ -10,8 +11,7 @@ PROBLEMS = [
         "title": "Two Sum",
         "slug": "two-sum",
         "description": "Given a list of integers and a target, print the indices of the two numbers that add up to the target.",
-        "difficulty": "easy",
-        "cluster": "Agni",
+        "difficulty": 1,
         "function_signature": "def two_sum(nums, target):",
         "test_cases": [
             {"input_data": "[2,7,11,15]\n9", "expected_output": "[0, 1]", "is_sample": True},
@@ -28,8 +28,10 @@ def seed():
                 print(f"Skipping {p['slug']} (already exists)")
                 continue
             problem = Problem(
-                title=p["title"], slug=p["slug"], description=p["description"],
-                difficulty=p["difficulty"], cluster=p.get("cluster"),
+                title=p["title"],
+                slug=p["slug"],
+                description=p["description"],
+                difficulty=p["difficulty"],
                 function_signature=p.get("function_signature"),
             )
             db.add(problem)

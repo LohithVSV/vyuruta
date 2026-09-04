@@ -6,3 +6,4 @@ from models.tribute import Tribute
 from models.topic import Topic
 from models.problem import Problem
 from models.testcase import TestCase
+from models.reward_log import RewardLog

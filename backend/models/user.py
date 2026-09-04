@@ -13,6 +13,7 @@ class User(Base):
     college_name = Column(String, nullable=False)
 
     currency = Column(Integer, nullable=False, default=0)
+    xp = Column(Integer, nullable=False, default=0)
     win_streak = Column(Integer, nullable=False, default=0)
     has_hosting_rights = Column(Boolean, nullable=False, default=False)
 

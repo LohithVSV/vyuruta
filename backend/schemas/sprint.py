@@ -6,6 +6,7 @@ from typing import Optional
 class SprintResponse(BaseModel):
     id: int
     battle_id: int
+    problem_id: Optional[int] = None
     problem_title: str
     status: str
     claimed_winner_id: Optional[int] = None
