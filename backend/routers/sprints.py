@@ -63,6 +63,43 @@ def _pay_rewards(winner: User, difficulty: int, db: Session):
     ))
 
 
+def _resolve_tribute(battle: Battle, winner_id: int, loser_id: int, db: Session):
+    """
+    Runs after a sprint has a confirmed winner. Checks whether this win
+    clears an existing debt (rematch win), escalates an existing debt
+    (repeat loss), or opens a fresh pay-vs-tax choice (first-time loss).
+    Sets battle.status accordingly. Caller is responsible for db.commit().
+    """
+    cleared_debt = (
+        db.query(Tribute)
+        .filter(
+            Tribute.debtor_id == winner_id,
+            Tribute.creditor_id == loser_id,
+            Tribute.active == True,  # noqa: E712
+        )
+        .first()
+    )
+    if cleared_debt:
+        cleared_debt.active = False
+        battle.status = "resolved"
+        return
+
+    existing_debt = (
+        db.query(Tribute)
+        .filter(
+            Tribute.debtor_id == loser_id,
+            Tribute.creditor_id == winner_id,
+            Tribute.active == True,  # noqa: E712
+        )
+        .first()
+    )
+    if existing_debt:
+        existing_debt.tax_rate_percent += TRIBUTE_TAX_RATE_BY_DIFFICULTY[battle.difficulty]
+        battle.status = "resolved"
+    else:
+        battle.status = "awaiting_tribute"
+
+
 @router.get("/mine", response_model=list[SprintResponse])
 def get_my_sprints(
     current_user: User = Depends(get_current_user),
@@ -127,38 +164,7 @@ def confirm_win(
 
     winner = db.query(User).filter(User.id == winner_id).first()
     _pay_rewards(winner, battle.difficulty, db)
-
-    # Did this win clear the winner's own debt to the loser? (a successful rematch)
-    cleared_debt = (
-        db.query(Tribute)
-        .filter(
-            Tribute.debtor_id == winner_id,
-            Tribute.creditor_id == loser_id,
-            Tribute.active == True,  # noqa: E712
-        )
-        .first()
-    )
-    if cleared_debt:
-        cleared_debt.active = False
-        battle.status = "resolved"
-    else:
-        # Does the loser already owe the winner tax? Losing again escalates it —
-        # always adds this battle's difficulty rate, no cancellation either way.
-        existing_debt = (
-            db.query(Tribute)
-            .filter(
-                Tribute.debtor_id == loser_id,
-                Tribute.creditor_id == winner_id,
-                Tribute.active == True,  # noqa: E712
-            )
-            .first()
-        )
-        if existing_debt:
-            existing_debt.tax_rate_percent += TRIBUTE_TAX_RATE_BY_DIFFICULTY[battle.difficulty]
-            battle.status = "resolved"
-        else:
-            # First-time loss to this opponent — loser must choose pay vs tax.
-            battle.status = "awaiting_tribute"
+    _resolve_tribute(battle, winner_id, loser_id, db)
 
     db.commit()
     db.refresh(sprint)
