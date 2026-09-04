@@ -1,57 +1,62 @@
-import { useState } from 'react';
-import './TerritoryMap.css';
+import React, { useMemo } from "react";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { generateCities, CLUSTERS } from "../data/cityData";
+import "./TerritoryMap.css";
 
-const ROWS = 10, COLS = 10, SIZE = 34;
-
-function generateMockCities() {
-  const cities = [];
-  let i = 0;
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const roll = Math.random();
-      cities.push({
-        id: `city-${i++}`,
-        row: r,
-        col: c,
-        faction: roll < 0.4 ? 'agni' : roll < 0.8 ? 'jal' : 'unclaimed',
-      });
-    }
-  }
-  return cities;
-}
+const VIEWBOX_WIDTH = 1600;
+const VIEWBOX_HEIGHT = 900;
 
 export default function TerritoryMap() {
-  const [cities] = useState(generateMockCities);
-  const [hovered, setHovered] = useState(null);
-
-  const hexPoints = (cx, cy) => {
-    const pts = [];
-    for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI / 180) * (60 * i - 30);
-      pts.push(`${cx + SIZE * Math.cos(angle)},${cy + SIZE * Math.sin(angle)}`);
-    }
-    return pts.join(' ');
-  };
+  // mockOwners: true just so you can SEE glow/color while backend isn't wired up yet
+  const cities = useMemo(() => generateCities({ mockOwners: true }), []);
 
   return (
-    <div className="map-wrap">
-      <svg viewBox="0 0 420 380" className="map-svg">
-        {cities.map((city) => {
-          const x = 40 + city.col * (SIZE * 1.5);
-          const y = 30 + city.row * (SIZE * 0.87) + (city.col % 2 === 0 ? 0 : SIZE * 0.43);
-          const isHovered = hovered === city.id;
-          return (
-            <polygon
-              key={city.id}
-              points={hexPoints(x, y)}
-              className={`hex hex-${city.faction} ${isHovered ? 'hex-hovered' : ''}`}
-              onMouseEnter={() => setHovered(city.id)}
-              onMouseLeave={() => setHovered(null)}
-            />
-          );
-        })}
-      </svg>
-      {hovered && <p className="map-hint">{hovered}</p>}
+    <div className="territory-map-wrapper">
+      <TransformWrapper
+        initialScale={1}
+        minScale={0.5}
+        maxScale={3}
+        wheel={{ step: 0.15 }}
+        doubleClick={{ disabled: true }}
+      >
+        <TransformComponent
+          wrapperClass="tm-transform-wrapper"
+          contentClass="tm-transform-content"
+        >
+          <svg viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`} className="tm-svg">
+            <rect x="0" y="0" width={VIEWBOX_WIDTH / 2} height={VIEWBOX_HEIGHT} className="tm-bg-fire" />
+            <rect x={VIEWBOX_WIDTH / 2} y="0" width={VIEWBOX_WIDTH / 2} height={VIEWBOX_HEIGHT} className="tm-bg-water" />
+
+            {CLUSTERS.map((cluster) => (
+              <text
+                key={cluster.name}
+                x={cluster.cx}
+                y={cluster.cy - 150}
+                textAnchor="middle"
+                className={`tm-cluster-label tm-cluster-label--${cluster.faction}`}
+              >
+                {cluster.name}
+              </text>
+            ))}
+
+            {cities.map((city) => (
+              <circle
+                key={city.id}
+                cx={city.x}
+                cy={city.y}
+                r={city.owner ? 10 : 7}
+                className={
+                  city.owner
+                    ? `tm-city tm-city--claimed tm-city--${city.faction}`
+                    : "tm-city tm-city--unclaimed"
+                }
+              >
+                <title>{city.id}{city.owner ? ` — ${city.owner}` : " — unclaimed"}</title>
+              </circle>
+            ))}
+          </svg>
+        </TransformComponent>
+      </TransformWrapper>
     </div>
   );
 }

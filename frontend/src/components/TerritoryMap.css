@@ -1,34 +1,73 @@
-.map-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.territory-map-wrapper {
+  width: 100%;
+  height: 100vh;
+  background: #05070a;
+  overflow: hidden;
+}
+
+.tm-transform-wrapper,
+.tm-transform-content {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.tm-svg {
+  width: 100%;
   height: 100%;
-  position: relative;
+  display: block;
 }
 
-.map-svg { width: 90%; max-width: 720px; }
+.tm-bg-fire {
+  fill: #1a0d08;
+}
 
-.hex {
-  stroke: var(--ink-line);
-  stroke-width: 1;
-  transition: transform 0.15s ease;
+.tm-bg-water {
+  fill: #071a1d;
+}
+
+.tm-cluster-label {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.tm-cluster-label--fire {
+  fill: rgba(255, 140, 90, 0.65);
+}
+
+.tm-cluster-label--water {
+  fill: rgba(90, 200, 220, 0.65);
+}
+
+.tm-city--unclaimed {
+  fill: #2e7d4f;
+  opacity: 0.55;
+  transition: all 0.25s ease;
   cursor: pointer;
-  transform-origin: center;
 }
 
-.hex-agni { fill: var(--agni-dim); }
-.hex-jal { fill: var(--jal-dim); }
-.hex-unclaimed { fill: var(--ink-raised); }
-
-.hex-hovered {
-  stroke: var(--text);
-  stroke-width: 1.5;
+.tm-city--claimed {
+  cursor: pointer;
 }
 
-.map-hint {
-  position: absolute;
-  bottom: 16px;
-  font-size: 12px;
-  color: var(--text-dim);
-  font-family: var(--font-body);
+.tm-city--claimed.tm-city--fire {
+  fill: #ff6b35;
+  animation: tm-pulse-fire 2.4s ease-in-out infinite;
+}
+
+.tm-city--claimed.tm-city--water {
+  fill: #1fa2b0;
+  animation: tm-pulse-water 2.4s ease-in-out infinite;
+}
+
+@keyframes tm-pulse-fire {
+  0%, 100% { filter: drop-shadow(0 0 3px #ff6b35); opacity: 1; }
+  50% { filter: drop-shadow(0 0 10px #ff6b35); opacity: 0.7; }
+}
+
+@keyframes tm-pulse-water {
+  0%, 100% { filter: drop-shadow(0 0 3px #1fa2b0); opacity: 1; }
+  50% { filter: drop-shadow(0 0 10px #1fa2b0); opacity: 0.7; }
 }
