@@ -25,20 +25,25 @@
   fill: #071a1d;
 }
 
-.tm-cluster-label {
+.tm-divide {
+  fill: #10151c;
+  opacity: 0.8;
+}
+
+.tm-state-label {
   font-family: "Bebas Neue", sans-serif;
-  font-size: 22px;
+  font-size: 26px;
   letter-spacing: 2px;
   pointer-events: none;
   user-select: none;
 }
 
-.tm-cluster-label--fire {
-  fill: rgba(255, 140, 90, 0.65);
+.tm-state-label--fire {
+  fill: rgba(255, 140, 90, 0.75);
 }
 
-.tm-cluster-label--water {
-  fill: rgba(90, 200, 220, 0.65);
+.tm-state-label--water {
+  fill: rgba(90, 200, 220, 0.75);
 }
 
 .tm-city--unclaimed {
@@ -48,26 +53,26 @@
   cursor: pointer;
 }
 
-.tm-city--claimed {
+.tm-building {
   cursor: pointer;
 }
 
-.tm-city--claimed.tm-city--fire {
+.tm-building--fire {
   fill: #ff6b35;
   animation: tm-pulse-fire 2.4s ease-in-out infinite;
 }
 
-.tm-city--claimed.tm-city--water {
+.tm-building--water {
   fill: #1fa2b0;
   animation: tm-pulse-water 2.4s ease-in-out infinite;
 }
 
 @keyframes tm-pulse-fire {
   0%, 100% { filter: drop-shadow(0 0 3px #ff6b35); opacity: 1; }
-  50% { filter: drop-shadow(0 0 10px #ff6b35); opacity: 0.7; }
+  50% { filter: drop-shadow(0 0 9px #ff6b35); opacity: 0.75; }
 }
 
 @keyframes tm-pulse-water {
   0%, 100% { filter: drop-shadow(0 0 3px #1fa2b0); opacity: 1; }
-  50% { filter: drop-shadow(0 0 10px #1fa2b0); opacity: 0.7; }
+  50% { filter: drop-shadow(0 0 9px #1fa2b0); opacity: 0.75; }
 }
