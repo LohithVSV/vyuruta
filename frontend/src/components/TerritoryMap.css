@@ -17,62 +17,54 @@
   display: block;
 }
 
-.tm-bg-fire {
-  fill: #1a0d08;
+.tm-ocean {
+  fill: #061b22;
 }
 
-.tm-bg-water {
-  fill: #071a1d;
-}
-
-.tm-divide {
-  fill: #10151c;
-  opacity: 0.8;
+.tm-island {
+  filter: drop-shadow(0 0 18px rgba(0, 0, 0, 0.6));
 }
 
 .tm-state-label {
   font-family: "Bebas Neue", sans-serif;
-  font-size: 26px;
-  letter-spacing: 2px;
+  font-size: 30px;
+  letter-spacing: 3px;
   pointer-events: none;
   user-select: none;
 }
 
 .tm-state-label--fire {
-  fill: rgba(255, 140, 90, 0.75);
+  fill: rgba(255, 140, 90, 0.85);
 }
 
 .tm-state-label--water {
-  fill: rgba(90, 200, 220, 0.75);
+  fill: rgba(90, 200, 220, 0.85);
+}
+
+.tm-city {
+  cursor: pointer;
+  transition: filter 0.25s ease, opacity 0.25s ease;
 }
 
 .tm-city--unclaimed {
-  fill: #2e7d4f;
   opacity: 0.55;
-  transition: all 0.25s ease;
-  cursor: pointer;
+  filter: grayscale(1) brightness(0.8);
 }
 
-.tm-building {
-  cursor: pointer;
-}
-
-.tm-building--fire {
-  fill: #ff6b35;
+.tm-city--claimed.tm-city--fire {
   animation: tm-pulse-fire 2.4s ease-in-out infinite;
 }
 
-.tm-building--water {
-  fill: #1fa2b0;
+.tm-city--claimed.tm-city--water {
   animation: tm-pulse-water 2.4s ease-in-out infinite;
 }
 
 @keyframes tm-pulse-fire {
-  0%, 100% { filter: drop-shadow(0 0 3px #ff6b35); opacity: 1; }
-  50% { filter: drop-shadow(0 0 9px #ff6b35); opacity: 0.75; }
+  0%, 100% { filter: drop-shadow(0 0 4px #ff6b35); opacity: 1; }
+  50% { filter: drop-shadow(0 0 11px #ff6b35); opacity: 0.8; }
 }
 
 @keyframes tm-pulse-water {
-  0%, 100% { filter: drop-shadow(0 0 3px #1fa2b0); opacity: 1; }
-  50% { filter: drop-shadow(0 0 9px #1fa2b0); opacity: 0.75; }
+  0%, 100% { filter: drop-shadow(0 0 4px #1fa2b0); opacity: 1; }
+  50% { filter: drop-shadow(0 0 11px #1fa2b0); opacity: 0.8; }
 }
