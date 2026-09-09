@@ -1,70 +1,636 @@
-.territory-map-wrapper {
+/* =====================================================
+   MAP VIEWPORT
+===================================================== */
+
+.territory-map {
+  position: relative;
+
   width: 100%;
   height: 100vh;
-  background: #05070a;
+
+  overflow: hidden;
+
+  background: #041a2e;
+
+  user-select: none;
+
+  cursor: grab;
+
+  touch-action: none;
+}
+
+.territory-map.dragging {
+  cursor: grabbing;
+}
+
+
+/* =====================================================
+   WORLD
+===================================================== */
+
+.map-world {
+  position: absolute;
+
+  /*
+    Large enough to contain your
+    10 × 10 sea world.
+  */
+
+  width: 2400px;
+  height: 2400px;
+
+  left: 50%;
+  top: 50%;
+
+  margin-left: -1200px;
+  margin-top: -1200px;
+
+  transform-origin: center center;
+
+  transition:
+    transform 0.12s ease-out;
+}
+
+
+/* =====================================================
+   10 × 10 OCEAN
+===================================================== */
+
+.sea-grid {
+  position: absolute;
+
+  inset: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(10, 1fr);
+
+  grid-template-rows:
+    repeat(10, 1fr);
+
   overflow: hidden;
 }
 
-.tm-transform-wrapper,
-.tm-transform-content {
-  width: 100% !important;
-  height: 100% !important;
-}
 
-.tm-svg {
+/* =====================================================
+   INDIVIDUAL SEA TILE
+===================================================== */
+
+.sea-tile {
   width: 100%;
   height: 100%;
-  display: block;
+
+  background-repeat: no-repeat;
+
+  /*
+    Each image fills one square.
+  */
+
+  background-size: 100% 100%;
+
+  background-position: center;
+
+  /*
+    Tiny overlap prevents microscopic
+    seams between tiles.
+  */
+
+  margin: -1px;
+
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
 }
 
-.tm-ocean {
-  fill: #061b22;
-}
 
-.tm-island {
-  filter: drop-shadow(0 0 18px rgba(0, 0, 0, 0.6));
-}
+/* =====================================================
+   SUBTLE OCEAN OVERLAY
+===================================================== */
 
-.tm-state-label {
-  font-family: "Bebas Neue", sans-serif;
-  font-size: 30px;
-  letter-spacing: 3px;
+.map-world::after {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
   pointer-events: none;
-  user-select: none;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      transparent 45%,
+      rgba(0, 8, 20, 0.22) 100%
+    );
 }
 
-.tm-state-label--fire {
-  fill: rgba(255, 140, 90, 0.85);
+
+/* =====================================================
+   REALM TITLES
+===================================================== */
+
+.realm-title {
+  position: absolute;
+
+  z-index: 20;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  text-align: center;
+
+  font-family: Georgia, serif;
+
+  pointer-events: none;
+
+  text-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.8);
 }
 
-.tm-state-label--water {
-  fill: rgba(90, 200, 220, 0.85);
+
+.realm-title span {
+  font-size: 48px;
+
+  font-weight: 800;
+
+  letter-spacing: 10px;
 }
 
-.tm-city {
+
+.realm-title small {
+  margin-top: 5px;
+
+  font-family: Arial, sans-serif;
+
+  font-size: 11px;
+
+  letter-spacing: 4px;
+
+  opacity: 0.75;
+}
+
+
+/* AGNI */
+
+.fire-title {
+  left: 25%;
+
+  top: 5%;
+
+  transform: translateX(-50%);
+
+  color: #ffc083;
+}
+
+
+/* JALA */
+
+.water-title {
+  left: 80%;
+
+  top: 5%;
+
+  transform: translateX(-50%);
+
+  color: #9cecff;
+}
+
+
+/* =====================================================
+   TERRITORIES
+===================================================== */
+
+.territory {
+  position: absolute;
+
+  z-index: 30;
+
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--rotation))
+    scale(var(--scale));
+
   cursor: pointer;
-  transition: filter 0.25s ease, opacity 0.25s ease;
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+
+  will-change: transform;
 }
 
-.tm-city--unclaimed {
-  opacity: 0.55;
-  filter: grayscale(1) brightness(0.8);
+
+.territory img {
+  display: block;
+
+  width: 185px;
+
+  height: auto;
+
+  object-fit: contain;
+
+  pointer-events: none;
+
+  user-select: none;
+
+  filter:
+    drop-shadow(
+      0 14px 10px
+      rgba(0, 0, 0, 0.55)
+    );
 }
 
-.tm-city--claimed.tm-city--fire {
-  animation: tm-pulse-fire 2.4s ease-in-out infinite;
+
+/* =====================================================
+   FIRE ISLANDS
+===================================================== */
+
+.territory-fire img {
+  filter:
+    drop-shadow(
+      0 14px 10px
+      rgba(0, 0, 0, 0.6)
+    )
+    drop-shadow(
+      0 0 14px
+      rgba(255, 80, 20, 0.18)
+    );
 }
 
-.tm-city--claimed.tm-city--water {
-  animation: tm-pulse-water 2.4s ease-in-out infinite;
+
+/* =====================================================
+   WATER ISLANDS
+===================================================== */
+
+.territory-water img {
+  filter:
+    drop-shadow(
+      0 14px 10px
+      rgba(0, 0, 0, 0.6)
+    )
+    drop-shadow(
+      0 0 14px
+      rgba(50, 190, 255, 0.2)
+    );
 }
 
-@keyframes tm-pulse-fire {
-  0%, 100% { filter: drop-shadow(0 0 4px #ff6b35); opacity: 1; }
-  50% { filter: drop-shadow(0 0 11px #ff6b35); opacity: 0.8; }
+
+/* =====================================================
+   HOVER
+===================================================== */
+
+.territory:hover {
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--rotation))
+    scale(
+      calc(var(--scale) * 1.1)
+    );
+
+  z-index: 100;
 }
 
-@keyframes tm-pulse-water {
-  0%, 100% { filter: drop-shadow(0 0 4px #1fa2b0); opacity: 1; }
-  50% { filter: drop-shadow(0 0 11px #1fa2b0); opacity: 0.8; }
+
+.territory:hover img {
+  filter:
+    drop-shadow(
+      0 18px 18px
+      rgba(0, 0, 0, 0.65)
+    )
+    brightness(1.1);
+}
+
+
+/* =====================================================
+   ISLAND NAME
+===================================================== */
+
+.territory-name {
+  position: absolute;
+
+  left: 50%;
+
+  bottom: -28px;
+
+  transform:
+    translateX(-50%)
+    rotate(
+      calc(var(--rotation) * -1)
+    );
+
+  padding:
+    5px 10px;
+
+  white-space: nowrap;
+
+  border-radius: 5px;
+
+  background:
+    rgba(2, 13, 25, 0.85);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.15);
+
+  color: white;
+
+  font-family: Arial, sans-serif;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 1px;
+
+  box-shadow:
+    0 5px 12px
+    rgba(0, 0, 0, 0.45);
+}
+
+
+/* =====================================================
+   SELECTED ISLAND
+===================================================== */
+
+.territory-selected {
+  z-index: 150;
+}
+
+
+.territory-selected img {
+  filter:
+    drop-shadow(
+      0 18px 20px
+      rgba(0, 0, 0, 0.7)
+    )
+    brightness(1.15);
+}
+
+
+/* =====================================================
+   MAP CONTROLS
+===================================================== */
+
+.map-controls {
+  position: absolute;
+
+  right: 25px;
+
+  bottom: 70px;
+
+  z-index: 500;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  overflow: hidden;
+
+  border-radius: 10px;
+
+  background:
+    rgba(3, 15, 27, 0.9);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.13);
+
+  backdrop-filter: blur(10px);
+
+  box-shadow:
+    0 10px 30px
+    rgba(0, 0, 0, 0.45);
+}
+
+
+.map-controls button {
+  width: 46px;
+
+  height: 43px;
+
+  border: none;
+
+  background: transparent;
+
+  color: white;
+
+  font-size: 23px;
+
+  cursor: pointer;
+}
+
+
+.map-controls button:hover {
+  background:
+    rgba(255, 255, 255, 0.1);
+}
+
+
+.zoom-level {
+  width: 46px;
+
+  padding: 5px 0;
+
+  text-align: center;
+
+  font-family: Arial, sans-serif;
+
+  font-size: 9px;
+
+  color:
+    rgba(255, 255, 255, 0.55);
+}
+
+
+.reset-button {
+  border-top:
+    1px solid
+    rgba(255, 255, 255, 0.1) !important;
+
+  font-size: 18px !important;
+}
+
+
+/* =====================================================
+   INFO PANEL
+===================================================== */
+
+.territory-info {
+  position: absolute;
+
+  right: 25px;
+
+  top: 25px;
+
+  z-index: 600;
+
+  width: 250px;
+
+  padding: 22px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(3, 15, 27, 0.94);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.14);
+
+  backdrop-filter: blur(12px);
+
+  color: white;
+
+  box-shadow:
+    0 15px 40px
+    rgba(0, 0, 0, 0.55);
+}
+
+
+.territory-info h2 {
+  margin: 10px 0;
+
+  font-family: Georgia, serif;
+}
+
+
+.territory-info p {
+  margin: 0;
+
+  color:
+    rgba(255, 255, 255, 0.65);
+
+  line-height: 1.5;
+}
+
+
+.info-element {
+  font-family: Arial, sans-serif;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 2px;
+}
+
+
+.info-element.fire {
+  color: #ff9b52;
+}
+
+
+.info-element.water {
+  color: #6edcff;
+}
+
+
+.close-info {
+  position: absolute;
+
+  right: 8px;
+
+  top: 6px;
+
+  width: 30px;
+
+  height: 30px;
+
+  border: none;
+
+  background: transparent;
+
+  color: white;
+
+  font-size: 23px;
+
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   HINT
+===================================================== */
+
+.map-hint {
+  position: absolute;
+
+  left: 50%;
+
+  bottom: 20px;
+
+  transform: translateX(-50%);
+
+  z-index: 500;
+
+  padding:
+    7px 14px;
+
+  border-radius: 20px;
+
+  background:
+    rgba(3, 15, 27, 0.75);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.1);
+
+  color:
+    rgba(255, 255, 255, 0.55);
+
+  font-family: Arial, sans-serif;
+
+  font-size: 10px;
+
+  pointer-events: none;
+
+  backdrop-filter: blur(5px);
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .map-world {
+    width: 1800px;
+    height: 1800px;
+
+    margin-left: -900px;
+    margin-top: -900px;
+  }
+
+  .territory img {
+    width: 130px;
+  }
+
+  .realm-title span {
+    font-size: 32px;
+  }
+
+  .realm-title small {
+    font-size: 8px;
+  }
+
+  .territory-name {
+    font-size: 9px;
+  }
+
+  .territory-info {
+    right: 15px;
+    top: 15px;
+    width: 200px;
+  }
+
+  .map-controls {
+    right: 15px;
+    bottom: 55px;
+  }
 }

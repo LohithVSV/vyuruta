@@ -1,89 +1,372 @@
-import React, { useMemo } from "react";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import { generateMap, STATES, VIEWBOX_WIDTH, VIEWBOX_HEIGHT } from "../data/cityData";
+import { useRef, useState } from "react";
+
+import { territories } from "../data/cityData";
+
+import backgroundSea from "../assets/maps/background-sea.png";
+
 import "./TerritoryMap.css";
 
-import agni1 from "../assets/maps/states/agni-1.png";
-import agni2 from "../assets/maps/states/agni-2.png";
-import agni3 from "../assets/maps/states/agni-3.png";
-import agni4 from "../assets/maps/states/agni-4.png";
-import agni5 from "../assets/maps/states/agni-5.png";
-import jala1 from "../assets/maps/states/jala-1.png";
-import jala2 from "../assets/maps/states/jala-2.png";
-import jala3 from "../assets/maps/states/jala-3.png";
-import jala4 from "../assets/maps/states/jala-4.png";
-import jala5 from "../assets/maps/states/jala-5.png";
 
-import cityMarkerFire from "../assets/maps/markers/city-fire.png";
-import cityMarkerWater from "../assets/maps/markers/city-water.png";
+function TerritoryMap() {
+  const [selectedTerritory, setSelectedTerritory] = useState(null);
 
-const ISLAND_IMAGES = {
-  "agni-1": agni1, "agni-2": agni2, "agni-3": agni3, "agni-4": agni4, "agni-5": agni5,
-  "jala-1": jala1, "jala-2": jala2, "jala-3": jala3, "jala-4": jala4, "jala-5": jala5,
-};
+  const [zoom, setZoom] = useState(0.8);
 
-const CITY_MARKER = { fire: cityMarkerFire, water: cityMarkerWater };
-const MARKER_SIZE = 30;
+  const [offset, setOffset] = useState({
+    x: 0,
+    y: 0,
+  });
 
-export default function TerritoryMap() {
-  const { cities } = useMemo(() => generateMap({ mockOwners: true }), []);
+  const [dragging, setDragging] = useState(false);
+
+  const dragStart = useRef({
+    x: 0,
+    y: 0,
+  });
+
+  const startingOffset = useRef({
+    x: 0,
+    y: 0,
+  });
+
+
+  /* =========================
+     PAN
+  ========================= */
+
+  const handlePointerDown = (e) => {
+    if (e.button !== 0) return;
+
+    setDragging(true);
+
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+    };
+
+    startingOffset.current = {
+      x: offset.x,
+      y: offset.y,
+    };
+
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+
+  const handlePointerMove = (e) => {
+    if (!dragging) return;
+
+    const dx =
+      e.clientX - dragStart.current.x;
+
+    const dy =
+      e.clientY - dragStart.current.y;
+
+    setOffset({
+      x:
+        startingOffset.current.x + dx,
+
+      y:
+        startingOffset.current.y + dy,
+    });
+  };
+
+
+  const stopDragging = (e) => {
+    setDragging(false);
+
+    if (
+      e.currentTarget.hasPointerCapture(
+        e.pointerId
+      )
+    ) {
+      e.currentTarget.releasePointerCapture(
+        e.pointerId
+      );
+    }
+  };
+
+
+  /* =========================
+     ZOOM
+  ========================= */
+
+  const handleWheel = (e) => {
+    e.preventDefault();
+
+    setZoom((currentZoom) => {
+      const amount =
+        e.deltaY > 0 ? -0.08 : 0.08;
+
+      return Math.min(
+        Math.max(
+          currentZoom + amount,
+          0.45
+        ),
+        2.5
+      );
+    });
+  };
+
+
+  const zoomIn = () => {
+    setZoom((z) =>
+      Math.min(z + 0.15, 2.5)
+    );
+  };
+
+
+  const zoomOut = () => {
+    setZoom((z) =>
+      Math.max(z - 0.15, 0.45)
+    );
+  };
+
+
+  const resetMap = () => {
+    setZoom(0.8);
+
+    setOffset({
+      x: 0,
+      y: 0,
+    });
+  };
+
+
+  /* =========================
+     100 SEA TILES
+  ========================= */
+
+  const seaTiles = Array.from(
+    { length: 100 },
+    (_, index) => index
+  );
+
 
   return (
-    <div className="territory-map-wrapper">
-      <TransformWrapper
-        initialScale={0.28}
-        minScale={0.15}
-        maxScale={4}
-        wheel={{ step: 0.15 }}
-        doubleClick={{ disabled: true }}
+    <div
+      className={`territory-map ${
+        dragging ? "dragging" : ""
+      }`}
+
+      onWheel={handleWheel}
+
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={stopDragging}
+      onPointerCancel={stopDragging}
+    >
+
+      {/* =================================
+          WORLD
+      ================================= */}
+
+      <div
+        className="map-world"
+
+        style={{
+          transform: `
+            translate(
+              ${offset.x}px,
+              ${offset.y}px
+            )
+            scale(${zoom})
+          `,
+        }}
       >
-        <TransformComponent
-          wrapperClass="tm-transform-wrapper"
-          contentClass="tm-transform-content"
+
+        {/* ===============================
+            10 × 10 SEA
+        =============================== */}
+
+        <div className="sea-grid">
+
+          {seaTiles.map((tile) => (
+            <div
+              key={tile}
+              className="sea-tile"
+              style={{
+                backgroundImage: `
+                  url(${backgroundSea})
+                `,
+              }}
+            />
+          ))}
+
+        </div>
+
+
+        {/* ===============================
+            REALM LABELS
+        =============================== */}
+
+        <div className="realm-title fire-title">
+          <span>AGNI</span>
+          <small>FIRE REALM</small>
+        </div>
+
+
+        <div className="realm-title water-title">
+          <span>JALA</span>
+          <small>WATER REALM</small>
+        </div>
+
+
+        {/* ===============================
+            ISLANDS
+        =============================== */}
+
+        {territories.map((territory) => {
+
+          const isSelected =
+            selectedTerritory?.id ===
+            territory.id;
+
+
+          return (
+            <div
+              key={territory.id}
+
+              className={`
+                territory
+                territory-${territory.element}
+                ${
+                  isSelected
+                    ? "territory-selected"
+                    : ""
+                }
+              `}
+
+              style={{
+                left: `${territory.position.x}%`,
+                top: `${territory.position.y}%`,
+
+                "--rotation":
+                  `${territory.rotation || 0}deg`,
+
+                "--scale":
+                  territory.scale || 1,
+              }}
+
+              onPointerDown={(e) => {
+                e.stopPropagation();
+              }}
+
+              onClick={(e) => {
+                e.stopPropagation();
+
+                setSelectedTerritory(
+                  territory
+                );
+              }}
+            >
+
+              <img
+                src={territory.image}
+                alt={territory.name}
+                draggable="false"
+              />
+
+              <div className="territory-name">
+                {territory.name}
+              </div>
+
+            </div>
+          );
+        })}
+
+      </div>
+
+
+      {/* =================================
+          MAP CONTROLS
+      ================================= */}
+
+      <div className="map-controls">
+
+        <button onClick={zoomIn}>
+          +
+        </button>
+
+        <div className="zoom-level">
+          {Math.round(zoom * 100)}%
+        </div>
+
+        <button onClick={zoomOut}>
+          −
+        </button>
+
+        <button
+          className="reset-button"
+          onClick={resetMap}
         >
-          <svg viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`} className="tm-svg">
-            <rect x="0" y="0" width={VIEWBOX_WIDTH} height={VIEWBOX_HEIGHT} className="tm-ocean" />
+          ↺
+        </button>
 
-            {STATES.map((state) => (
-              <g key={state.name}>
-                <image
-                  href={ISLAND_IMAGES[state.image]}
-                  x={state.tileX}
-                  y={state.tileY}
-                  width={state.tileSize}
-                  height={state.tileSize}
-                  preserveAspectRatio="xMidYMid slice"
-                  className={`tm-island tm-island--${state.faction}`}
-                />
-                <text
-                  x={state.tileX + state.tileSize / 2}
-                  y={state.tileY - 24}
-                  textAnchor="middle"
-                  className={`tm-state-label tm-state-label--${state.faction}`}
-                >
-                  {state.name.toUpperCase()}
-                </text>
-              </g>
-            ))}
+      </div>
 
-            {cities.map((city) => (
-              <image
-                key={city.id}
-                href={CITY_MARKER[city.faction]}
-                x={city.x - MARKER_SIZE / 2}
-                y={city.y - MARKER_SIZE}
-                width={MARKER_SIZE}
-                height={MARKER_SIZE}
-                className={`tm-city tm-city--${city.faction} ${
-                  city.owner ? "tm-city--claimed" : "tm-city--unclaimed"
-                }`}
-              >
-                <title>{city.id} — {city.owner ?? "unclaimed"}</title>
-              </image>
-            ))}
-          </svg>
-        </TransformComponent>
-      </TransformWrapper>
+
+      {/* =================================
+          TERRITORY INFO
+      ================================= */}
+
+      {selectedTerritory && (
+
+        <div className="territory-info">
+
+          <button
+            className="close-info"
+
+            onClick={() =>
+              setSelectedTerritory(null)
+            }
+          >
+            ×
+          </button>
+
+
+          <div
+            className={`info-element ${
+              selectedTerritory.element
+            }`}
+          >
+            {selectedTerritory.element ===
+            "fire"
+              ? "🔥 FIRE TERRITORY"
+              : "💧 WATER TERRITORY"}
+          </div>
+
+
+          <h2>
+            {selectedTerritory.name}
+          </h2>
+
+
+          <p>
+            Territory of the{" "}
+            {selectedTerritory.element ===
+            "fire"
+              ? "Agni"
+              : "Jala"}{" "}
+            realm.
+          </p>
+
+        </div>
+      )}
+
+
+      {/* =================================
+          HELP
+      ================================= */}
+
+      <div className="map-hint">
+        🖱 Drag to explore&nbsp;&nbsp; • &nbsp;&nbsp;
+        Scroll to zoom
+      </div>
+
     </div>
   );
 }
+
+
+export default TerritoryMap;
