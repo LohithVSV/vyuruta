@@ -1,0 +1,501 @@
+.landing {
+  min-height: 100vh;
+  width: 100%;
+  background: var(--ink);
+  color: var(--text);
+  overflow-x: clip;
+}
+
+/* ---------- GAME TITLE ---------- */
+
+.landing-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 22px 20px 12px;
+  position: relative;
+  z-index: 10;
+}
+
+.header-logo {
+  display: block;
+  width: min(320px, 65vw);
+  height: auto;
+  max-height: 110px;
+  object-fit: contain;
+}
+
+/* Very subtle divider under title */
+.header-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--jal) 30%,
+    #d4af37 50%,
+    var(--agni) 70%,
+    transparent
+  );
+  opacity: 0.35;
+}
+
+
+/* ---------- HERO ---------- */
+
+.hero {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 145px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* ---------- ELEMENT GLOWS ---------- */
+
+.hero-glow {
+  position: absolute;
+
+  width: 42vw;
+  height: 42vw;
+
+  max-width: 520px;
+  max-height: 520px;
+
+  top: 48%;
+  transform: translateY(-50%);
+
+  border-radius: 50%;
+  filter: blur(120px);
+
+  opacity: 0.16;
+  pointer-events: none;
+
+  z-index: -2;
+}
+
+.hero-glow-jal {
+  left: -18%;
+  background: var(--jal);
+}
+
+.hero-glow-agni {
+  right: -18%;
+  background: var(--agni);
+}
+
+
+/* ---------- CHARACTERS ---------- */
+
+.hero-character {
+  position: absolute;
+  bottom: 0;
+
+  height: 82%;
+
+  z-index: -1;
+
+  pointer-events: none;
+  user-select: none;
+
+  opacity: 0.9;
+}
+
+.hero-character img {
+  display: block;
+
+  height: 100%;
+  width: auto;
+
+  object-fit: contain;
+
+  filter:
+    drop-shadow(0 20px 30px rgba(0, 0, 0, 0.55));
+
+  user-select: none;
+  pointer-events: none;
+}
+
+.hero-character-jal {
+  left: -45px;
+}
+
+.hero-character-agni {
+  right: -45px;
+}
+
+
+/* ---------- CENTER CONTENT ---------- */
+
+.hero-center {
+  position: relative;
+  z-index: 2;
+
+  width: min(620px, 90%);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+
+  padding: 60px 20px 100px;
+}
+
+/* Dark glass behind text so characters don't destroy readability */
+
+.hero-center::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 20px -40px;
+
+  background: radial-gradient(
+    ellipse,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 0.45) 45%,
+    transparent 75%
+  );
+
+  filter: blur(12px);
+
+  z-index: -1;
+  pointer-events: none;
+}
+
+
+/* ---------- HERO TEXT ---------- */
+
+.hero-kicker {
+  font-size: 12px;
+  font-weight: 600;
+
+  letter-spacing: 3px;
+  text-transform: uppercase;
+
+  color: var(--text-dim);
+
+  margin: 0 0 18px;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+
+  font-size: clamp(32px, 5vw, 58px);
+
+  line-height: 1.08;
+
+  letter-spacing: 0.5px;
+
+  margin: 0 0 22px;
+}
+
+.hero-sub {
+  max-width: 540px;
+
+  font-size: 16px;
+  line-height: 1.65;
+
+  color: var(--text-dim);
+
+  margin: 0 0 32px;
+}
+
+
+/* ---------- CTA ---------- */
+
+.cta-button {
+  font-family: var(--font-display);
+
+  font-size: 18px;
+  letter-spacing: 1px;
+
+  color: var(--ink);
+
+  background: linear-gradient(
+    90deg,
+    var(--jal),
+    var(--agni)
+  );
+
+  border: none;
+  border-radius: 6px;
+
+  padding: 16px 48px;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.cta-button:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.cta-hero {
+  padding: 15px 42px;
+  font-size: 16px;
+}
+
+
+/* ---------- ABOUT ---------- */
+
+.about {
+  position: relative;
+
+  padding: 100px 24px 120px;
+
+  border-top: 1px solid var(--ink-line);
+
+  background: var(--ink);
+
+  z-index: 3;
+}
+
+.about-inner {
+  max-width: 960px;
+
+  margin: 0 auto;
+
+  text-align: center;
+}
+
+.about-kicker {
+  font-family: var(--font-display);
+
+  font-size: 36px;
+
+  letter-spacing: 1px;
+
+  margin: 0 0 16px;
+}
+
+.about-lead {
+  font-size: 17px;
+
+  color: var(--text-dim);
+
+  max-width: 600px;
+
+  margin: 0 auto 48px;
+
+  line-height: 1.6;
+}
+
+
+/* ---------- ABOUT CARDS ---------- */
+
+.about-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 24px;
+
+  text-align: left;
+
+  margin-bottom: 56px;
+}
+
+.about-card {
+  background: var(--ink-raised);
+
+  border: 1px solid var(--ink-line);
+
+  border-radius: 8px;
+
+  padding: 28px;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.about-card:hover {
+  transform: translateY(-4px);
+
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.about-card h3 {
+  font-family: var(--font-display);
+
+  font-size: 20px;
+
+  letter-spacing: 0.5px;
+
+  margin: 0 0 10px;
+}
+
+.about-card p {
+  color: var(--text-dim);
+
+  font-size: 14px;
+
+  line-height: 1.6;
+
+  margin: 0;
+}
+
+
+/* ---------- PLACEHOLDERS ---------- */
+
+.hero-placeholder {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  width: 220px;
+  height: 100%;
+
+  border: 2px dashed var(--ink-line);
+
+  border-radius: 12px;
+
+  background: var(--ink-raised);
+
+  color: var(--text-dim);
+}
+
+.placeholder-jal span {
+  color: var(--jal);
+
+  font-family: var(--font-display);
+
+  font-size: 28px;
+}
+
+.placeholder-agni span {
+  color: var(--agni);
+
+  font-family: var(--font-display);
+
+  font-size: 28px;
+}
+
+.hero-placeholder p {
+  font-size: 12px;
+
+  font-family: monospace;
+}
+
+
+/* ---------- TABLET ---------- */
+
+@media (max-width: 1000px) {
+
+  .hero {
+    min-height: 720px;
+  }
+
+  .hero-character {
+    height: 65%;
+    opacity: 0.45;
+  }
+
+  .hero-character-jal {
+    left: -100px;
+  }
+
+  .hero-character-agni {
+    right: -100px;
+  }
+
+  .hero-center {
+    padding-bottom: 100px;
+  }
+
+  .about-grid {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 600px) {
+
+  .landing-header {
+    padding: 18px 16px 10px;
+  }
+
+  .header-logo {
+    width: min(250px, 72vw);
+    max-height: 90px;
+  }
+
+  .hero {
+    min-height: 680px;
+  }
+
+  .hero-character {
+    height: 48%;
+    opacity: 0.28;
+  }
+
+  .hero-character-jal {
+    left: -130px;
+  }
+
+  .hero-character-agni {
+    right: -130px;
+  }
+
+  .hero-center {
+    width: 94%;
+    padding: 40px 12px 90px;
+  }
+
+  .hero-title {
+    font-size: clamp(30px, 9vw, 42px);
+  }
+
+  .hero-sub {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .hero-center::before {
+    inset: 0 -20px;
+  }
+
+  .cta-hero {
+    padding: 14px 32px;
+  }
+
+  .about {
+    padding: 75px 18px 90px;
+  }
+
+  .about-kicker {
+    font-size: 30px;
+  }
+
+  .about-lead {
+    font-size: 15px;
+  }
+
+  .about-card {
+    padding: 22px;
+  }
+}
