@@ -50,9 +50,11 @@ export default function Landing() {
             Your campus is a battlefield.<br />Claim it in code.
           </h1>
           <p className="hero-sub">
-            100 cities. Two elements. One season. Form a team, win coding
-            battles, and take territory — city by city — until your banner
-            covers the map.
+VYURUTA is a solo coding strategy game where players battle others through coding challenges.
+Choose **Fire or Water**, win matches, earn points, and collect tribute from defeated players.
+Your weekly wins determine your rank as you compete to become the **ultimate ruler**.
+
+
           </p>
           <button className="cta-button cta-hero">Start Conquering</button>
         </div>
@@ -75,24 +77,41 @@ export default function Landing() {
 
       <section className="about">
         <div className="about-inner">
-          <h2 className="about-kicker">What is Vyuruta</h2>
+          <h2 className="about-kicker">What is Vyuruta?</h2>
           <p className="about-lead">
-            Your campus, redrawn as a map of 100 cities. Every team starts by
-            claiming one. Every coding battle you win is territory you take.
+            Vyuruta is a solo coding strategy game where players battle others through coding challenges to earn points and tribute.
+Choose Fire or Water, climb the weekly rankings, and compete to become the ultimate ruler.
           </p>
 
           <div className="about-grid">
             <div className="about-card">
-              <h3>Form a team</h3>
-              <p>Squad up, pick a name and banner, get auto-assigned a home city on the map.</p>
+              <h3>Coding Battles</h3>
+              <p>Challenge players through DSA and coding matches.
+Win battles to gain points and influence.</p>
             </div>
             <div className="about-card">
-              <h3>Battle for territory</h3>
-              <p>Challenge rival teams to DSA sprints. Win, and their city — or their tribute — is yours.</p>
+              <h3>Choose your side</h3>
+              <p>Choose your element at the beginning.
+Build your legacy with either Fire or Water.</p>
             </div>
             <div className="about-card">
-              <h3>Climb the campus</h3>
+              <h3>Climb the Campus</h3>
               <p>Weekly contests, win streaks, hosting rights. One map, every team, one season.</p>
+            </div>
+            <div className="about-card">
+              <h3>10 States</h3>
+              <p>The world is divided into 5 Fire and 5 Water states.
+Rise through them to become the ultimate ruler.</p>
+            </div>
+            <div className="about-card">
+              <h3>Tribute System</h3>
+              <p>Defeated players can pay tribute to their winners.
+Repeated losses can increase the tax they owe.</p>
+            </div>
+            <div className="about-card">
+              <h3>Ultimate Ruler</h3>
+              <p>Compete against players across the entire world.
+Prove your coding skills and claim the top spot.</p>
             </div>
           </div>
 
