@@ -1,0 +1,210 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Rajdhani:wght@500;600;700&display=swap");
+
+* {
+  box-sizing: border-box;
+}
+
+.stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  pointer-events: none;
+}
+
+.panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: min(420px, 92vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: rgba(10, 10, 13, 0.74);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(212, 175, 106, 0.35);
+  border-radius: 6px;
+  padding: 2rem 2rem 1.75rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  color: #eae6da;
+}
+
+.tabs {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+.tab {
+  background: none;
+  border: none;
+  font-family: "Cinzel", serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  color: #9a978d;
+  padding-bottom: 0.4rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  color: #d4af6a;
+  border-bottom-color: #d4af6a;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: "Rajdhani", sans-serif;
+}
+
+.field span {
+  font-size: 0.8rem;
+  color: #9a978d;
+}
+
+.field input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(201, 201, 201, 0.25);
+  color: #eae6da;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.95rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 3px;
+  outline: none;
+}
+
+.field input:focus {
+  border-color: #d4af6a;
+}
+
+.error {
+  color: #ff6a3d;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.cta {
+  margin-top: 0.4rem;
+  background: linear-gradient(90deg, #ff6a3d, #4fb8ff);
+  border: none;
+  color: #0c0c0f;
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  padding: 0.75rem 1rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ghost {
+  background: none;
+  border: 1px solid rgba(201, 201, 201, 0.35);
+  color: #c9c9c9;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.row .cta {
+  flex: 1;
+  margin-top: 0;
+}
+
+.steps {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(201, 201, 201, 0.3);
+}
+
+.dot.on {
+  background: #d4af6a;
+}
+
+.factions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.faction-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.85rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Cinzel", serif;
+  border: 1px solid rgba(201, 201, 201, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+  color: #eae6da;
+}
+
+.faction-card.fire.selected {
+  border-color: #ff6a3d;
+  background: rgba(255, 106, 61, 0.15);
+  box-shadow: 0 0 10px rgba(255, 106, 61, 0.35);
+}
+
+.faction-card.water.selected {
+  border-color: #4fb8ff;
+  background: rgba(79, 184, 255, 0.15);
+  box-shadow: 0 0 10px rgba(79, 184, 255, 0.35);
+}
+
+.faction-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.faction-tag {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.68rem;
+  color: #9a978d;
+  text-align: center;
+}
