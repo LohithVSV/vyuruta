@@ -53,23 +53,18 @@
   overflow-x: hidden;
 
   background:
-    /* Fire atmosphere — left */
     radial-gradient(
       ellipse at 8% 48%,
       rgba(201, 132, 58, 0.10) 0%,
       rgba(201, 132, 58, 0.035) 28%,
       transparent 52%
     ),
-
-    /* Water atmosphere — right */
     radial-gradient(
       ellipse at 92% 48%,
       rgba(55, 137, 185, 0.12) 0%,
       rgba(55, 137, 185, 0.035) 28%,
       transparent 54%
     ),
-
-    /* Main darkness */
     linear-gradient(
       90deg,
       rgba(4, 7, 7, 0.60) 0%,
@@ -77,14 +72,12 @@
       rgba(5, 8, 9, 0.18) 65%,
       rgba(4, 7, 7, 0.60) 100%
     ),
-
     linear-gradient(
       180deg,
       rgba(5, 8, 8, 0.18) 0%,
       rgba(5, 8, 8, 0.02) 45%,
       rgba(4, 6, 7, 0.58) 100%
     ),
-
     url("../assets/home/dashboard-bg.png");
 
   background-size: cover;
@@ -100,12 +93,9 @@
 
 .home::before {
   content: "";
-
   position: fixed;
   inset: 0;
-
   pointer-events: none;
-
   z-index: 0;
 
   background:
@@ -130,10 +120,8 @@
 
 .home::after {
   content: "";
-
   position: fixed;
   inset: 0;
-
   pointer-events: none;
 
   background:
@@ -180,6 +168,22 @@
   padding: 0 42px;
 
   box-sizing: border-box;
+
+  border-bottom: 1px solid transparent;
+
+  transition:
+    background 220ms ease,
+    border-color 220ms ease;
+}
+
+.home__topbar--scrolled {
+  position: sticky;
+  top: 0;
+
+  background: rgba(6, 9, 10, 0.72);
+  border-bottom-color: var(--line);
+
+  backdrop-filter: blur(10px);
 }
 
 
@@ -453,94 +457,32 @@
   line-height: 0.95;
 
   letter-spacing: -0.025em;
+
+  color: var(--text);
 }
 
 .home__welcome h1 span {
   display: block;
 
-  color: rgba(233, 231, 223, 0.76);
+  color: rgba(233, 231, 223, 0.5);
 
-  font-size: 0.52em;
+  font-size: 0.42em;
+  font-weight: 400;
 
-  margin-top: 10px;
+  margin-top: 14px;
 
   letter-spacing: 0.01em;
 }
 
 .home__welcome p {
-  margin-top: 18px;
+  margin-top: 22px;
 
-  color: var(--muted);
+  color: var(--text-soft);
 
-  font-size: 0.82rem;
+  font-size: 0.92rem;
+  font-weight: 500;
 
-  letter-spacing: 0.05em;
-}
-
-
-/* =========================================================
-   SECTIONS
-   ========================================================= */
-
-.battles,
-.activity,
-.territory,
-.leaderboard {
-  position: relative;
-
-  background: var(--glass);
-
-  border-top: 1px solid var(--line);
-
-  backdrop-filter: blur(3px);
-}
-
-
-/* Subtle dual-faction section line */
-
-.battles::before,
-.activity::before,
-.territory::before,
-.leaderboard::before {
-  content: "";
-
-  position: absolute;
-
-  left: 0;
-  top: -1px;
-
-  width: 85px;
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      var(--fire),
-      transparent
-    );
-
-  opacity: 0.75;
-}
-
-.leaderboard::after {
-  content: "";
-
-  position: absolute;
-
-  right: 0;
-  top: -1px;
-
-  width: 85px;
-  height: 1px;
-
-  background:
-    linear-gradient(
-      270deg,
-      var(--water),
-      transparent
-    );
-
-  opacity: 0.75;
+  letter-spacing: 0.01em;
 }
 
 
@@ -589,10 +531,6 @@
 /* =========================================================
    BATTLES
    ========================================================= */
-
-.battles {
-  padding: 25px 0 0;
-}
 
 .section-action {
   display: flex;
@@ -672,9 +610,6 @@
     );
 }
 
-
-/* Number */
-
 .battle-row__number {
   color: rgba(233, 231, 223, 0.25);
 
@@ -682,9 +617,6 @@
 
   font-size: 0.85rem;
 }
-
-
-/* Opponent */
 
 .battle-row__opponent {
   display: grid;
@@ -723,9 +655,6 @@
   margin-top: -2px;
 }
 
-
-/* Status */
-
 .battle-row__status {
   color: var(--muted);
 
@@ -735,9 +664,6 @@
 
   text-transform: uppercase;
 }
-
-
-/* Arrow */
 
 .battle-row__arrow {
   border: 0;
@@ -858,15 +784,11 @@
    ACTIVITY
    ========================================================= */
 
-.activity {
-  padding: 22px 0 0;
-}
-
 .activity__list {
   list-style: none;
 
   margin: 0;
-
+  
   padding: 0;
 }
 
@@ -925,10 +847,6 @@
 /* =========================================================
    TERRITORY
    ========================================================= */
-
-.territory {
-  padding: 22px 0 0;
-}
 
 .territory__stats {
   display: grid;
@@ -1030,16 +948,9 @@
    LEADERBOARD
    ========================================================= */
 
-.leaderboard {
-  padding: 22px 0 0;
-}
-
 .leaderboard__list {
   border-bottom: 1px solid var(--line);
 }
-
-
-/* Leaderboard row */
 
 .leaderboard__row {
   min-height: 48px;
@@ -1074,9 +985,6 @@
     );
 }
 
-
-/* Rank */
-
 .leaderboard__rank {
   color: rgba(233, 231, 223, 0.42);
 
@@ -1086,9 +994,6 @@
 
   text-align: center;
 }
-
-
-/* Top three */
 
 .leaderboard__row:nth-child(1) .leaderboard__rank {
   color: var(--fire);
@@ -1103,9 +1008,6 @@
 .leaderboard__row:nth-child(3) .leaderboard__rank {
   color: rgba(167, 128, 88, 0.78);
 }
-
-
-/* Username */
 
 .leaderboard__name {
   min-width: 0;
@@ -1123,9 +1025,6 @@
   white-space: nowrap;
 }
 
-
-/* XP */
-
 .leaderboard__xp {
   color: var(--water);
 
@@ -1134,9 +1033,6 @@
 
   letter-spacing: 0.04em;
 }
-
-
-/* Current user */
 
 .leaderboard__row--current,
 .leaderboard__row--self {
@@ -1182,9 +1078,6 @@
   color: var(--text);
 }
 
-
-/* Your position separator */
-
 .leaderboard__separator {
   display: flex;
 
@@ -1215,9 +1108,6 @@
   background: var(--line);
 }
 
-
-/* Loading / error / empty */
-
 .leaderboard__state {
   padding: 22px 0;
 
@@ -1234,72 +1124,33 @@
    ========================================================= */
 
 .home__profile {
-  position: relative;
-
   align-self: start;
 
   min-height: 650px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(201, 162, 75, 0.035),
-      rgba(91, 159, 196, 0.055)
-    ),
-    linear-gradient(
-      180deg,
-      rgba(8, 11, 12, 0.62),
-      rgba(8, 11, 12, 0.30)
-    );
-
-  border: 1px solid rgba(218, 224, 220, 0.12);
-
-  backdrop-filter: blur(8px);
-
-  overflow: hidden;
 }
-
-
-/* Profile faction atmosphere */
 
 .home__profile::before {
   content: "";
 
   position: absolute;
 
-  width: 250px;
-  height: 250px;
-
-  left: -100px;
-  top: 120px;
-
-  border-radius: 50%;
-
-  background: var(--fire-glow);
-
-  filter: blur(65px);
+  inset: 0;
 
   pointer-events: none;
-}
 
-.home__profile::after {
-  content: "";
+  z-index: 0;
 
-  position: absolute;
-
-  width: 250px;
-  height: 250px;
-
-  right: -100px;
-  top: 100px;
-
-  border-radius: 50%;
-
-  background: var(--water-glow);
-
-  filter: blur(65px);
-
-  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at -5% 30%,
+      var(--fire-glow),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 105% 25%,
+      var(--water-glow),
+      transparent 34%
+    );
 }
 
 
@@ -1308,15 +1159,14 @@
    ========================================================= */
 
 .profile__top {
-  position: relative;
-
-  z-index: 3;
-
   display: flex;
 
   justify-content: space-between;
 
-  padding: 18px 20px;
+  padding: 0 0 18px;
+
+  margin: -24px -25px 18px;
+  padding: 18px 25px;
 
   border-bottom: 1px solid var(--line);
 
@@ -1340,11 +1190,9 @@
    ========================================================= */
 
 .profile__character {
-  position: relative;
-
-  z-index: 2;
-
   height: 270px;
+
+  margin: 0 -25px;
 
   display: flex;
 
@@ -1377,11 +1225,6 @@
   transform: translateY(-4px);
 }
 
-
-/* =========================================================
-   CHARACTER GLOW
-   ========================================================= */
-
 .profile__character-glow {
   position: absolute;
 
@@ -1403,12 +1246,7 @@
   filter: blur(35px);
 }
 
-
-/* Water faction profile */
-
-.home__profile:has(
-  img[alt*="water"]
-) .profile__character-glow {
+.home__profile:has(img[alt*="water"]) .profile__character-glow {
   background:
     radial-gradient(
       circle,
@@ -1418,18 +1256,11 @@
     );
 }
 
-.home__profile:has(
-  img[alt*="water"]
-) .profile__faction {
+.home__profile:has(img[alt*="water"]) .profile__faction {
   color: var(--water);
 }
 
-
-/* Fire faction profile */
-
-.home__profile:has(
-  img[alt*="fire"]
-) .profile__character-glow {
+.home__profile:has(img[alt*="fire"]) .profile__character-glow {
   background:
     radial-gradient(
       circle,
@@ -1439,9 +1270,7 @@
     );
 }
 
-.home__profile:has(
-  img[alt*="fire"]
-) .profile__faction {
+.home__profile:has(img[alt*="fire"]) .profile__faction {
   color: var(--fire);
 }
 
@@ -1451,13 +1280,9 @@
    ========================================================= */
 
 .profile__identity {
-  position: relative;
-
-  z-index: 3;
-
   text-align: center;
 
-  padding: 12px 20px 20px;
+  padding: 12px 0 20px;
 }
 
 .profile__faction {
@@ -1493,22 +1318,15 @@
    ========================================================= */
 
 .profile__currency {
-  position: relative;
-
-  z-index: 3;
-
   display: flex;
 
   align-items: center;
 
   justify-content: space-between;
 
-  margin: 0 20px;
-
   padding: 13px 0;
 
   border-top: 1px solid var(--line);
-
   border-bottom: 1px solid var(--line);
 }
 
@@ -1548,15 +1366,9 @@
    ========================================================= */
 
 .profile__record {
-  position: relative;
-
-  z-index: 3;
-
   display: grid;
 
   grid-template-columns: repeat(3, 1fr);
-
-  margin: 0 20px;
 
   padding: 16px 0;
 
@@ -1611,11 +1423,7 @@
    ========================================================= */
 
 .profile__history {
-  position: relative;
-
-  z-index: 3;
-
-  padding: 18px 20px 0;
+  padding: 18px 0 0;
 }
 
 .profile__history-heading {
@@ -1694,15 +1502,11 @@
    ========================================================= */
 
 .profile__signout {
-  position: relative;
-
-  z-index: 3;
-
   display: block;
 
-  width: calc(100% - 40px);
+  width: 100%;
 
-  margin: 18px 20px 20px;
+  margin-top: 18px;
 
   padding: 10px 0;
 
@@ -1744,6 +1548,69 @@
   outline: 1px solid var(--water);
 
   outline-offset: 4px;
+}
+
+
+/* =========================================================
+   SECTION CARDS — unified gradient-border system
+   Used by: battles, activity, territory, leaderboard, profile
+   ========================================================= */
+
+.battles,
+.activity,
+.territory,
+.leaderboard {
+  position: relative;
+
+  padding: 24px 25px;
+
+  border: 1px solid transparent;
+  border-radius: 3px;
+
+  background: transparent;
+
+  backdrop-filter: blur(8px);
+
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+
+  overflow: hidden;
+}
+
+.battles::after,
+.activity::after,
+.territory::after {
+  content: "";
+
+  position: absolute;
+
+  top: -1px;
+  left: 12%;
+
+  width: 76%;
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      var(--fire),
+      rgba(201, 162, 75, 0.35),
+      rgba(91, 159, 196, 0.35),
+      var(--water),
+      transparent
+    );
+
+  opacity: 0.75;
+
+  pointer-events: none;
+}
+
+.battles > *,
+.activity > *,
+.territory > *,
+.leaderboard > * {
+  position: relative;
+  z-index: 1;
 }
 
 
@@ -1917,136 +1784,4 @@
     height: 235px;
   }
 
-}
-/* =========================================================
-   SECTION BOXES — GOLD → WATER GRADIENT
-   ========================================================= */
-
-.battles,
-.activity,
-.territory,
-.leaderboard {
-  position: relative;
-
-  padding: 24px 25px;
-
-  border: 1px solid transparent;
-  border-radius: 3px;
-
-  background:
-    linear-gradient(
-      rgba(7, 11, 12, 0.68),
-      rgba(7, 11, 12, 0.68)
-    ) padding-box,
-
-    linear-gradient(
-      110deg,
-      rgba(201, 162, 75, 0.58),
-      rgba(201, 162, 75, 0.18) 38%,
-      rgba(91, 159, 196, 0.18) 62%,
-      rgba(91, 159, 196, 0.58)
-    ) border-box;
-
-  backdrop-filter: blur(8px);
-
-  box-shadow:
-    0 12px 35px rgba(0, 0, 0, 0.18);
-
-  overflow: hidden;
-}
-
-
-/* =========================================================
-   SUBTLE INNER GRADIENT
-   ========================================================= */
-
-.battles::before,
-.activity::before,
-.territory::before,
-.leaderboard::before {
-  content: "";
-
-  position: absolute;
-
-  inset: 0;
-
-  pointer-events: none;
-
-  background:
-    linear-gradient(
-      110deg,
-      rgba(201, 162, 75, 0.035),
-      transparent 35%,
-      transparent 65%,
-      rgba(91, 159, 196, 0.045)
-    );
-
-  z-index: 0;
-}
-
-
-/* Keep actual content above the overlay */
-
-.battles > *,
-.activity > *,
-.territory > *,
-.leaderboard > * {
-  position: relative;
-
-  z-index: 1;
-}
-
-
-/* =========================================================
-   TOP EDGE — GOLD → BLUE
-   ========================================================= */
-
-.battles::after,
-.activity::after,
-.territory::after,
-.leaderboard::after {
-  content: "";
-
-  position: absolute;
-
-  top: -1px;
-  left: 12%;
-
-  width: 76%;
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      var(--fire),
-      rgba(201, 162, 75, 0.35),
-      rgba(91, 159, 196, 0.35),
-      var(--water),
-      transparent
-    );
-
-  opacity: 0.75;
-
-  pointer-events: none;
-}
-
-
-/* =========================================================
-   HOVER — VERY SUBTLE
-   ========================================================= */
-
-.battles,
-.activity,
-.territory,
-.leaderboard {
-  padding: 24px 25px;
-    border: 2px linear-gradient(
-    110deg,
-    rgba(201, 162, 75, 0.58),
-    rgba(201, 162, 75, 0.18) 38%,
-    rgba(91, 159, 196, 0.18) 62%,
-    rgba(91, 159, 196, 0.58)
-  ) border-box;
-  border-radius: 3px;
 }

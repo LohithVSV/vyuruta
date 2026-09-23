@@ -24,6 +24,13 @@ const BATTLE_STATUS_LABEL = {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const [team] = useState(mockTeam);
   const [battles] = useState(mockBattles);
@@ -104,7 +111,9 @@ export default function HomePage() {
           TOP NAV
       ===================================================== */}
 
-      <header className="home__topbar">
+      <header
+        className={`home__topbar ${scrolled ? "home__topbar--scrolled" : ""}`}
+      >
 
         <button
           className="home__brand"
