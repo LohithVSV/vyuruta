@@ -1208,13 +1208,15 @@
 
   z-index: 2;
 
-  height: 310px;
+  height: 270px;
   width: auto;
 
   object-fit: contain;
 
   filter:
     drop-shadow(0 12px 20px rgba(0, 0, 0, 0.7));
+
+  object-position: center top;
 
   transition:
     transform 400ms ease,
@@ -1559,15 +1561,18 @@
 .battles,
 .activity,
 .territory,
+.home__profile,
 .leaderboard {
   position: relative;
 
   padding: 24px 25px;
 
-  border: 1px solid transparent;
-  border-radius: 3px;
+  border: 1px solid;
+  border-image: linear-gradient(135deg, rgb(134, 80, 0), rgb(0, 73, 114)) 1;   /* CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANNNNNNNNNNNNNNNNNNNNNNNNNNNNGEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE*/
+  border-radius: 5px;
 
-  background: transparent;
+  background:
+    linear-gradient(transparent, transparent) padding-box;
 
   backdrop-filter: blur(8px);
 
