@@ -1,6 +1,7 @@
 /* =========================================================
    VYURUTA — HOME
-   Cinematic / minimal game dashboard
+   Cinematic / minimal strategy dashboard
+   Dual Faction — Fire + Water
    ========================================================= */
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Spectral:wght@500;600;700&display=swap");
@@ -11,16 +12,32 @@
    ========================================================= */
 
 .home {
-  --gold: #c9a24b;
-  --gold-soft: rgba(201, 162, 75, 0.65);
+  /* ---------- Faction colors ---------- */
 
-  --text: #e9e4d3;
-  --muted: #96998b;
+  --fire: #c9a24b;
+  --fire-bright: #d98d43;
+  --fire-soft: rgba(201, 162, 75, 0.65);
+  --fire-glow: rgba(217, 141, 67, 0.16);
 
-  --line: rgba(218, 204, 164, 0.16);
+  --water: #5b9fc4;
+  --water-bright: #72b8dc;
+  --water-soft: rgba(91, 159, 196, 0.65);
+  --water-glow: rgba(72, 148, 196, 0.15);
 
-  --glass: rgba(8, 12, 9, 0.38);
-  --glass-heavy: rgba(8, 11, 8, 0.58);
+  /* ---------- Neutral palette ---------- */
+
+  --text: #e9e7df;
+  --text-soft: rgba(233, 231, 223, 0.78);
+  --muted: #969b9a;
+  --muted-dark: rgba(150, 155, 154, 0.65);
+
+  --line: rgba(218, 224, 220, 0.13);
+  --line-soft: rgba(218, 224, 220, 0.075);
+
+  --glass: rgba(7, 11, 12, 0.42);
+  --glass-heavy: rgba(6, 9, 10, 0.64);
+
+  --background: #080b0c;
 
   position: relative;
 
@@ -36,19 +53,38 @@
   overflow-x: hidden;
 
   background:
+    /* Fire atmosphere — left */
+    radial-gradient(
+      ellipse at 8% 48%,
+      rgba(201, 132, 58, 0.10) 0%,
+      rgba(201, 132, 58, 0.035) 28%,
+      transparent 52%
+    ),
+
+    /* Water atmosphere — right */
+    radial-gradient(
+      ellipse at 92% 48%,
+      rgba(55, 137, 185, 0.12) 0%,
+      rgba(55, 137, 185, 0.035) 28%,
+      transparent 54%
+    ),
+
+    /* Main darkness */
     linear-gradient(
       90deg,
-      rgba(5, 8, 6, 0.48) 0%,
-      rgba(5, 8, 6, 0.15) 35%,
-      rgba(5, 8, 6, 0.12) 65%,
-      rgba(5, 8, 6, 0.52) 100%
+      rgba(4, 7, 7, 0.60) 0%,
+      rgba(5, 8, 9, 0.22) 35%,
+      rgba(5, 8, 9, 0.18) 65%,
+      rgba(4, 7, 7, 0.60) 100%
     ),
+
     linear-gradient(
       180deg,
-      rgba(5, 8, 6, 0.18) 0%,
-      rgba(5, 8, 6, 0.04) 50%,
-      rgba(5, 8, 6, 0.48) 100%
+      rgba(5, 8, 8, 0.18) 0%,
+      rgba(5, 8, 8, 0.02) 45%,
+      rgba(4, 6, 7, 0.58) 100%
     ),
+
     url("../assets/home/dashboard-bg.png");
 
   background-size: cover;
@@ -58,7 +94,39 @@
 }
 
 
-/* Very subtle cinematic vignette */
+/* =========================================================
+   AMBIENT FACTION LIGHT
+   ========================================================= */
+
+.home::before {
+  content: "";
+
+  position: fixed;
+  inset: 0;
+
+  pointer-events: none;
+
+  z-index: 0;
+
+  background:
+    radial-gradient(
+      ellipse at 0% 52%,
+      rgba(208, 128, 48, 0.07),
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse at 100% 52%,
+      rgba(48, 133, 184, 0.08),
+      transparent 34%
+    );
+
+  mix-blend-mode: screen;
+}
+
+
+/* =========================================================
+   CINEMATIC VIGNETTE
+   ========================================================= */
 
 .home::after {
   content: "";
@@ -71,8 +139,8 @@
   background:
     radial-gradient(
       ellipse at center,
-      transparent 35%,
-      rgba(0, 0, 0, 0.32) 100%
+      transparent 34%,
+      rgba(0, 0, 0, 0.36) 100%
     );
 
   z-index: 0;
@@ -115,10 +183,13 @@
 }
 
 
-/* Logo */
+/* =========================================================
+   LOGO
+   ========================================================= */
 
 .home__brand {
   position: absolute;
+
   left: 40px;
   top: 22px;
 
@@ -127,6 +198,7 @@
   padding: 0;
 
   border: 0;
+
   background: transparent;
 
   cursor: pointer;
@@ -147,16 +219,22 @@
 
 .home__brand:hover {
   transform: translateY(-1px);
-  filter: brightness(1.1);
+
+  filter:
+    brightness(1.08)
+    drop-shadow(0 0 14px rgba(91, 159, 196, 0.12));
 }
 
 
-/* Navigation */
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
 
 .home__nav {
   position: absolute;
 
   left: 50%;
+
   transform: translateX(-50%);
 
   display: flex;
@@ -171,21 +249,25 @@
   padding: 8px 0;
 
   border: 0;
+
   background: transparent;
 
-  color: rgba(233, 228, 211, 0.62);
+  color: rgba(233, 231, 223, 0.60);
 
   font-family: "Inter", sans-serif;
+
   font-size: 0.72rem;
   font-weight: 600;
 
   letter-spacing: 0.15em;
+
   text-transform: uppercase;
 
   cursor: pointer;
 
   transition:
-    color 180ms ease;
+    color 180ms ease,
+    text-shadow 180ms ease;
 }
 
 .home__nav-item::after {
@@ -201,7 +283,12 @@
 
   transform: translateX(-50%);
 
-  background: var(--gold);
+  background:
+    linear-gradient(
+      90deg,
+      var(--fire),
+      var(--water)
+    );
 
   transition: width 180ms ease;
 }
@@ -216,7 +303,9 @@
 }
 
 
-/* World button */
+/* =========================================================
+   ENTER WORLD BUTTON
+   ========================================================= */
 
 .home__map-button {
   position: absolute;
@@ -225,21 +314,30 @@
 
   display: flex;
   align-items: center;
+
   gap: 13px;
 
   padding: 10px 15px;
 
-  border: 1px solid rgba(201, 162, 75, 0.45);
+  border: 1px solid rgba(91, 159, 196, 0.34);
 
-  background: rgba(10, 13, 10, 0.38);
+  background:
+    linear-gradient(
+      100deg,
+      rgba(201, 162, 75, 0.045),
+      rgba(91, 159, 196, 0.075)
+    ),
+    rgba(8, 11, 12, 0.40);
 
   color: var(--text);
 
   font-family: "Inter", sans-serif;
+
   font-size: 0.7rem;
   font-weight: 600;
 
   letter-spacing: 0.12em;
+
   text-transform: uppercase;
 
   cursor: pointer;
@@ -248,26 +346,48 @@
 
   transition:
     background 180ms ease,
-    border-color 180ms ease;
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .home__map-button:hover {
-  background: rgba(201, 162, 75, 0.1);
-  border-color: var(--gold);
+  background:
+    linear-gradient(
+      100deg,
+      rgba(201, 162, 75, 0.09),
+      rgba(91, 159, 196, 0.12)
+    );
+
+  border-color: rgba(91, 159, 196, 0.60);
+
+  box-shadow:
+    0 0 22px rgba(60, 140, 185, 0.08);
 }
 
 .home__map-arrow {
-  color: var(--gold);
+  color: var(--water);
+
   font-size: 1rem;
+
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.home__map-button:hover .home__map-arrow {
+  color: var(--water-bright);
+
+  transform: translate(2px, -2px);
 }
 
 
 /* =========================================================
-   CONTENT
+   MAIN CONTENT
    ========================================================= */
 
 .home__content {
   position: relative;
+
   z-index: 2;
 
   display: grid;
@@ -309,7 +429,7 @@
 .section-heading__eyebrow {
   display: block;
 
-  color: var(--gold);
+  color: var(--water);
 
   font-size: 0.62rem;
   font-weight: 600;
@@ -317,6 +437,10 @@
   letter-spacing: 0.24em;
 
   text-transform: uppercase;
+}
+
+.home__welcome .home__eyebrow {
+  color: var(--fire);
 }
 
 .home__welcome h1 {
@@ -334,7 +458,7 @@
 .home__welcome h1 span {
   display: block;
 
-  color: rgba(233, 228, 211, 0.78);
+  color: rgba(233, 231, 223, 0.76);
 
   font-size: 0.52em;
 
@@ -360,7 +484,10 @@
 
 .battles,
 .activity,
-.territory {
+.territory,
+.leaderboard {
+  position: relative;
+
   background: var(--glass);
 
   border-top: 1px solid var(--line);
@@ -369,12 +496,63 @@
 }
 
 
-/* Heading */
+/* Subtle dual-faction section line */
+
+.battles::before,
+.activity::before,
+.territory::before,
+.leaderboard::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: -1px;
+
+  width: 85px;
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--fire),
+      transparent
+    );
+
+  opacity: 0.75;
+}
+
+.leaderboard::after {
+  content: "";
+
+  position: absolute;
+
+  right: 0;
+  top: -1px;
+
+  width: 85px;
+  height: 1px;
+
+  background:
+    linear-gradient(
+      270deg,
+      var(--water),
+      transparent
+    );
+
+  opacity: 0.75;
+}
+
+
+/* =========================================================
+   SECTION HEADING
+   ========================================================= */
 
 .section-heading {
   display: flex;
 
   align-items: flex-end;
+
   justify-content: space-between;
 
   margin-bottom: 20px;
@@ -393,6 +571,21 @@
 }
 
 
+/* Alternate heading accents */
+
+.activity .section-heading__eyebrow {
+  color: var(--water);
+}
+
+.territory .section-heading__eyebrow {
+  color: var(--fire);
+}
+
+.leaderboard .section-heading__eyebrow {
+  color: var(--water);
+}
+
+
 /* =========================================================
    BATTLES
    ========================================================= */
@@ -403,12 +596,15 @@
 
 .section-action {
   display: flex;
+
   align-items: center;
+
   gap: 10px;
 
   padding: 7px 0;
 
   border: 0;
+
   background: transparent;
 
   color: var(--muted);
@@ -417,6 +613,7 @@
   font-weight: 600;
 
   letter-spacing: 0.12em;
+
   text-transform: uppercase;
 
   cursor: pointer;
@@ -425,7 +622,7 @@
 }
 
 .section-action span:last-child {
-  color: var(--gold);
+  color: var(--fire);
 
   font-size: 1rem;
 }
@@ -435,7 +632,9 @@
 }
 
 
-/* Battle list */
+/* =========================================================
+   BATTLE LIST
+   ========================================================= */
 
 .battles__list {
   border-bottom: 1px solid var(--line);
@@ -465,14 +664,19 @@
   padding-left: 8px;
   padding-right: 8px;
 
-  background: rgba(255, 255, 255, 0.025);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(201, 162, 75, 0.025),
+      rgba(91, 159, 196, 0.045)
+    );
 }
 
 
 /* Number */
 
 .battle-row__number {
-  color: rgba(233, 228, 211, 0.25);
+  color: rgba(233, 231, 223, 0.25);
 
   font-family: "Spectral", serif;
 
@@ -493,7 +697,7 @@
 }
 
 .battle-row__opponent span {
-  color: var(--gold);
+  color: var(--fire);
 
   font-size: 0.55rem;
   font-weight: 700;
@@ -505,6 +709,7 @@
   font-family: "Spectral", serif;
 
   font-size: 1.05rem;
+
   font-weight: 600;
 }
 
@@ -536,39 +741,49 @@
 
 .battle-row__arrow {
   border: 0;
+
   background: transparent;
 
-  color: var(--gold);
+  color: var(--water);
 
   font-size: 1.1rem;
 
   cursor: pointer;
 
-  transition: transform 180ms ease;
+  transition:
+    transform 180ms ease,
+    color 180ms ease;
 }
 
 .battle-row:hover .battle-row__arrow {
   transform: translateX(4px);
+
+  color: var(--water-bright);
 }
 
 
-/* Empty */
+/* =========================================================
+   EMPTY BATTLES
+   ========================================================= */
 
 .battles__empty {
   display: flex;
+
   flex-direction: column;
+
   align-items: center;
 
   padding: 45px 20px;
 
   border-top: 1px solid var(--line);
+
   border-bottom: 1px solid var(--line);
 
   text-align: center;
 }
 
 .battles__empty-symbol {
-  color: var(--gold);
+  color: var(--water);
 
   font-size: 1.4rem;
 
@@ -585,17 +800,17 @@
 
 
 /* =========================================================
-   GOLD BUTTON
+   GOLD / PRIMARY BUTTON
    ========================================================= */
 
 .gold-button {
   padding: 9px 17px;
 
-  border: 1px solid var(--gold);
+  border: 1px solid var(--fire);
 
   background: rgba(201, 162, 75, 0.08);
 
-  color: var(--gold);
+  color: var(--fire);
 
   font-size: 0.65rem;
   font-weight: 600;
@@ -608,12 +823,17 @@
 
   transition:
     background 180ms ease,
-    color 180ms ease;
+    color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .gold-button:hover {
-  background: var(--gold);
+  background: var(--fire);
+
   color: #10130e;
+
+  box-shadow:
+    0 0 20px rgba(201, 162, 75, 0.12);
 }
 
 
@@ -624,7 +844,9 @@
 .home__lower {
   display: grid;
 
-  grid-template-columns: 1.25fr 0.75fr;
+  grid-template-columns:
+    1.2fr
+    1fr;
 
   gap: 45px;
 
@@ -644,6 +866,7 @@
   list-style: none;
 
   margin: 0;
+
   padding: 0;
 }
 
@@ -667,13 +890,21 @@
 
   border-radius: 50%;
 
-  background: var(--gold);
+  background: var(--water);
 
-  box-shadow: 0 0 8px rgba(201, 162, 75, 0.5);
+  box-shadow:
+    0 0 8px rgba(91, 159, 196, 0.42);
+}
+
+.activity__item:nth-child(2n) .activity__dot {
+  background: var(--fire);
+
+  box-shadow:
+    0 0 8px rgba(201, 162, 75, 0.42);
 }
 
 .activity__item p {
-  color: rgba(233, 228, 211, 0.82);
+  color: rgba(233, 231, 223, 0.82);
 
   font-size: 0.74rem;
 
@@ -711,6 +942,7 @@
 
 .territory__stats div {
   display: flex;
+
   flex-direction: column;
 
   padding-bottom: 20px;
@@ -730,6 +962,18 @@
   font-size: 1.7rem;
 
   font-weight: 500;
+}
+
+.territory__stats div:nth-child(1) strong {
+  color: var(--water);
+}
+
+.territory__stats div:nth-child(2) strong {
+  color: var(--fire);
+}
+
+.territory__stats div:nth-child(3) strong {
+  color: var(--text);
 }
 
 .territory__stats span {
@@ -772,7 +1016,7 @@
 }
 
 .territory__button span {
-  color: var(--gold);
+  color: var(--water);
 
   font-size: 1rem;
 }
@@ -783,7 +1027,210 @@
 
 
 /* =========================================================
-   PROFILE
+   LEADERBOARD
+   ========================================================= */
+
+.leaderboard {
+  padding: 22px 0 0;
+}
+
+.leaderboard__list {
+  border-bottom: 1px solid var(--line);
+}
+
+
+/* Leaderboard row */
+
+.leaderboard__row {
+  min-height: 48px;
+
+  display: grid;
+
+  grid-template-columns:
+    42px
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 10px;
+
+  border-top: 1px solid var(--line-soft);
+
+  transition:
+    background 180ms ease,
+    padding 180ms ease;
+}
+
+.leaderboard__row:hover {
+  padding-left: 7px;
+  padding-right: 7px;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(201, 162, 75, 0.025),
+      rgba(91, 159, 196, 0.045)
+    );
+}
+
+
+/* Rank */
+
+.leaderboard__rank {
+  color: rgba(233, 231, 223, 0.42);
+
+  font-family: "Spectral", serif;
+
+  font-size: 0.82rem;
+
+  text-align: center;
+}
+
+
+/* Top three */
+
+.leaderboard__row:nth-child(1) .leaderboard__rank {
+  color: var(--fire);
+
+  font-size: 0.95rem;
+}
+
+.leaderboard__row:nth-child(2) .leaderboard__rank {
+  color: rgba(180, 205, 214, 0.78);
+}
+
+.leaderboard__row:nth-child(3) .leaderboard__rank {
+  color: rgba(167, 128, 88, 0.78);
+}
+
+
+/* Username */
+
+.leaderboard__name {
+  min-width: 0;
+
+  color: rgba(233, 231, 223, 0.82);
+
+  font-size: 0.72rem;
+
+  font-weight: 600;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+/* XP */
+
+.leaderboard__xp {
+  color: var(--water);
+
+  font-size: 0.62rem;
+  font-weight: 600;
+
+  letter-spacing: 0.04em;
+}
+
+
+/* Current user */
+
+.leaderboard__row--current,
+.leaderboard__row--self {
+  position: relative;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(201, 162, 75, 0.065),
+      rgba(91, 159, 196, 0.075)
+    );
+}
+
+.leaderboard__row--current::before,
+.leaderboard__row--self::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  width: 2px;
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--fire),
+      var(--water)
+    );
+}
+
+.leaderboard__row--current .leaderboard__rank,
+.leaderboard__row--self .leaderboard__rank {
+  color: var(--fire);
+
+  font-weight: 700;
+}
+
+.leaderboard__row--current .leaderboard__name,
+.leaderboard__row--self .leaderboard__name {
+  color: var(--text);
+}
+
+
+/* Your position separator */
+
+.leaderboard__separator {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin: 8px 0;
+
+  color: var(--muted);
+
+  font-size: 0.48rem;
+  font-weight: 600;
+
+  letter-spacing: 0.16em;
+
+  text-transform: uppercase;
+}
+
+.leaderboard__separator::before,
+.leaderboard__separator::after {
+  content: "";
+
+  height: 1px;
+
+  flex: 1;
+
+  background: var(--line);
+}
+
+
+/* Loading / error / empty */
+
+.leaderboard__state {
+  padding: 22px 0;
+
+  color: var(--muted);
+
+  font-size: 0.68rem;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   PROFILE PANEL
    ========================================================= */
 
 .home__profile {
@@ -795,12 +1242,17 @@
 
   background:
     linear-gradient(
+      145deg,
+      rgba(201, 162, 75, 0.035),
+      rgba(91, 159, 196, 0.055)
+    ),
+    linear-gradient(
       180deg,
-      rgba(8, 11, 8, 0.5),
-      rgba(8, 11, 8, 0.25)
+      rgba(8, 11, 12, 0.62),
+      rgba(8, 11, 12, 0.30)
     );
 
-  border: 1px solid rgba(218, 204, 164, 0.12);
+  border: 1px solid rgba(218, 224, 220, 0.12);
 
   backdrop-filter: blur(8px);
 
@@ -808,9 +1260,58 @@
 }
 
 
-/* Profile top */
+/* Profile faction atmosphere */
+
+.home__profile::before {
+  content: "";
+
+  position: absolute;
+
+  width: 250px;
+  height: 250px;
+
+  left: -100px;
+  top: 120px;
+
+  border-radius: 50%;
+
+  background: var(--fire-glow);
+
+  filter: blur(65px);
+
+  pointer-events: none;
+}
+
+.home__profile::after {
+  content: "";
+
+  position: absolute;
+
+  width: 250px;
+  height: 250px;
+
+  right: -100px;
+  top: 100px;
+
+  border-radius: 50%;
+
+  background: var(--water-glow);
+
+  filter: blur(65px);
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   PROFILE TOP
+   ========================================================= */
 
 .profile__top {
+  position: relative;
+
+  z-index: 3;
+
   display: flex;
 
   justify-content: space-between;
@@ -834,16 +1335,21 @@
 }
 
 
-/* Character */
+/* =========================================================
+   PROFILE CHARACTER
+   ========================================================= */
 
 .profile__character {
   position: relative;
+
+  z-index: 2;
 
   height: 270px;
 
   display: flex;
 
   justify-content: center;
+
   align-items: flex-end;
 
   overflow: hidden;
@@ -851,6 +1357,7 @@
 
 .profile__character img {
   position: relative;
+
   z-index: 2;
 
   height: 310px;
@@ -861,7 +1368,9 @@
   filter:
     drop-shadow(0 12px 20px rgba(0, 0, 0, 0.7));
 
-  transition: transform 400ms ease;
+  transition:
+    transform 400ms ease,
+    filter 400ms ease;
 }
 
 .home__profile:hover .profile__character img {
@@ -869,7 +1378,9 @@
 }
 
 
-/* Character glow */
+/* =========================================================
+   CHARACTER GLOW
+   ========================================================= */
 
 .profile__character-glow {
   position: absolute;
@@ -881,22 +1392,76 @@
 
   border-radius: 50%;
 
-  background: rgba(201, 162, 75, 0.13);
+  background:
+    radial-gradient(
+      circle,
+      rgba(201, 162, 75, 0.16),
+      rgba(91, 159, 196, 0.06) 55%,
+      transparent 72%
+    );
 
-  filter: blur(45px);
+  filter: blur(35px);
 }
 
 
-/* Identity */
+/* Water faction profile */
+
+.home__profile:has(
+  img[alt*="water"]
+) .profile__character-glow {
+  background:
+    radial-gradient(
+      circle,
+      rgba(91, 159, 196, 0.23),
+      rgba(65, 143, 190, 0.08) 55%,
+      transparent 72%
+    );
+}
+
+.home__profile:has(
+  img[alt*="water"]
+) .profile__faction {
+  color: var(--water);
+}
+
+
+/* Fire faction profile */
+
+.home__profile:has(
+  img[alt*="fire"]
+) .profile__character-glow {
+  background:
+    radial-gradient(
+      circle,
+      rgba(217, 141, 67, 0.22),
+      rgba(201, 162, 75, 0.08) 55%,
+      transparent 72%
+    );
+}
+
+.home__profile:has(
+  img[alt*="fire"]
+) .profile__faction {
+  color: var(--fire);
+}
+
+
+/* =========================================================
+   IDENTITY
+   ========================================================= */
 
 .profile__identity {
+  position: relative;
+
+  z-index: 3;
+
   text-align: center;
 
   padding: 12px 20px 20px;
 }
 
 .profile__faction {
-  color: var(--gold);
+  color: var(--fire);
 
   font-size: 0.58rem;
   font-weight: 700;
@@ -923,12 +1488,19 @@
 }
 
 
-/* Currency */
+/* =========================================================
+   CURRENCY
+   ========================================================= */
 
 .profile__currency {
+  position: relative;
+
+  z-index: 3;
+
   display: flex;
 
   align-items: center;
+
   justify-content: space-between;
 
   margin: 0 20px;
@@ -936,11 +1508,13 @@
   padding: 13px 0;
 
   border-top: 1px solid var(--line);
+
   border-bottom: 1px solid var(--line);
 }
 
 .profile__currency div {
   display: flex;
+
   flex-direction: column;
 }
 
@@ -955,7 +1529,7 @@
 .profile__currency strong {
   margin-top: 2px;
 
-  color: var(--gold);
+  color: var(--fire);
 
   font-family: "Spectral", serif;
 
@@ -963,15 +1537,21 @@
 }
 
 .profile__currency-symbol {
-  color: var(--gold);
+  color: var(--water);
 
   font-size: 1.1rem;
 }
 
 
-/* Record */
+/* =========================================================
+   RECORD
+   ========================================================= */
 
 .profile__record {
+  position: relative;
+
+  z-index: 3;
+
   display: grid;
 
   grid-template-columns: repeat(3, 1fr);
@@ -985,6 +1565,7 @@
 
 .profile__record div {
   display: flex;
+
   flex-direction: column;
 
   align-items: center;
@@ -1000,6 +1581,18 @@
   font-size: 1.1rem;
 
   font-weight: 600;
+}
+
+.profile__record div:nth-child(1) strong {
+  color: var(--fire);
+}
+
+.profile__record div:nth-child(2) strong {
+  color: #a75c4e;
+}
+
+.profile__record div:nth-child(3) strong {
+  color: var(--water);
 }
 
 .profile__record span {
@@ -1018,6 +1611,10 @@
    ========================================================= */
 
 .profile__history {
+  position: relative;
+
+  z-index: 3;
+
   padding: 18px 20px 0;
 }
 
@@ -1034,6 +1631,7 @@
   list-style: none;
 
   margin: 11px 0 0;
+
   padding: 0;
 }
 
@@ -1044,7 +1642,7 @@
 
   padding: 8px 0;
 
-  border-bottom: 1px solid rgba(218, 204, 164, 0.08);
+  border-bottom: 1px solid rgba(218, 224, 220, 0.07);
 }
 
 .history-item__marker {
@@ -1057,7 +1655,7 @@
 
   border-radius: 50%;
 
-  background: var(--gold);
+  background: var(--water);
 }
 
 .history-item--win .history-item__marker {
@@ -1069,11 +1667,11 @@
 }
 
 .history-item--claim .history-item__marker {
-  background: var(--gold);
+  background: var(--fire);
 }
 
 .history-item p {
-  color: rgba(233, 228, 211, 0.75);
+  color: rgba(233, 231, 223, 0.75);
 
   font-size: 0.62rem;
 
@@ -1096,6 +1694,10 @@
    ========================================================= */
 
 .profile__signout {
+  position: relative;
+
+  z-index: 3;
+
   display: block;
 
   width: calc(100% - 40px);
@@ -1104,11 +1706,11 @@
 
   padding: 10px 0;
 
-  border: 1px solid rgba(218, 204, 164, 0.1);
+  border: 1px solid rgba(218, 224, 220, 0.10);
 
   background: transparent;
 
-  color: rgba(233, 228, 211, 0.4);
+  color: rgba(233, 231, 223, 0.40);
 
   font-size: 0.56rem;
   font-weight: 600;
@@ -1121,24 +1723,40 @@
 
   transition:
     color 180ms ease,
-    border-color 180ms ease;
+    border-color 180ms ease,
+    background 180ms ease;
 }
 
 .profile__signout:hover {
   color: var(--text);
 
-  border-color: rgba(218, 204, 164, 0.3);
+  border-color: rgba(91, 159, 196, 0.32);
+
+  background: rgba(91, 159, 196, 0.035);
 }
 
 
 /* =========================================================
-   RESPONSIVE
+   SUBTLE FOCUS STATES
+   ========================================================= */
+
+.home button:focus-visible {
+  outline: 1px solid var(--water);
+
+  outline-offset: 4px;
+}
+
+
+/* =========================================================
+   RESPONSIVE — 1050px
    ========================================================= */
 
 @media (max-width: 1050px) {
 
   .home__content {
-    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-columns:
+      minmax(0, 1fr)
+      280px;
 
     gap: 35px;
 
@@ -1152,6 +1770,10 @@
 
 }
 
+
+/* =========================================================
+   RESPONSIVE — 820px
+   ========================================================= */
 
 @media (max-width: 820px) {
 
@@ -1205,6 +1827,10 @@
 }
 
 
+/* =========================================================
+   RESPONSIVE — 600px
+   ========================================================= */
+
 @media (max-width: 600px) {
 
   .home__welcome {
@@ -1232,4 +1858,195 @@
     gap: 35px;
   }
 
+  .leaderboard__row {
+    grid-template-columns:
+      34px
+      minmax(0, 1fr)
+      auto;
+  }
+
+  .leaderboard__xp {
+    font-size: 0.56rem;
+  }
+
+}
+
+
+/* =========================================================
+   RESPONSIVE — 420px
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+  .home__topbar {
+    padding: 0 15px;
+  }
+
+  .home__brand {
+    left: 15px;
+
+    width: 92px;
+  }
+
+  .home__map-button {
+    right: 15px;
+
+    padding: 7px 9px;
+
+    font-size: 0.58rem;
+  }
+
+  .home__content {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .home__welcome h1 {
+    font-size: 2.25rem;
+  }
+
+  .territory__stats strong {
+    font-size: 1.45rem;
+  }
+
+  .profile__character {
+    height: 205px;
+  }
+
+  .profile__character img {
+    height: 235px;
+  }
+
+}
+/* =========================================================
+   SECTION BOXES — GOLD → WATER GRADIENT
+   ========================================================= */
+
+.battles,
+.activity,
+.territory,
+.leaderboard {
+  position: relative;
+
+  padding: 24px 25px;
+
+  border: 1px solid transparent;
+  border-radius: 3px;
+
+  background:
+    linear-gradient(
+      rgba(7, 11, 12, 0.68),
+      rgba(7, 11, 12, 0.68)
+    ) padding-box,
+
+    linear-gradient(
+      110deg,
+      rgba(201, 162, 75, 0.58),
+      rgba(201, 162, 75, 0.18) 38%,
+      rgba(91, 159, 196, 0.18) 62%,
+      rgba(91, 159, 196, 0.58)
+    ) border-box;
+
+  backdrop-filter: blur(8px);
+
+  box-shadow:
+    0 12px 35px rgba(0, 0, 0, 0.18);
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   SUBTLE INNER GRADIENT
+   ========================================================= */
+
+.battles::before,
+.activity::before,
+.territory::before,
+.leaderboard::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      110deg,
+      rgba(201, 162, 75, 0.035),
+      transparent 35%,
+      transparent 65%,
+      rgba(91, 159, 196, 0.045)
+    );
+
+  z-index: 0;
+}
+
+
+/* Keep actual content above the overlay */
+
+.battles > *,
+.activity > *,
+.territory > *,
+.leaderboard > * {
+  position: relative;
+
+  z-index: 1;
+}
+
+
+/* =========================================================
+   TOP EDGE — GOLD → BLUE
+   ========================================================= */
+
+.battles::after,
+.activity::after,
+.territory::after,
+.leaderboard::after {
+  content: "";
+
+  position: absolute;
+
+  top: -1px;
+  left: 12%;
+
+  width: 76%;
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      var(--fire),
+      rgba(201, 162, 75, 0.35),
+      rgba(91, 159, 196, 0.35),
+      var(--water),
+      transparent
+    );
+
+  opacity: 0.75;
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   HOVER — VERY SUBTLE
+   ========================================================= */
+
+.battles,
+.activity,
+.territory,
+.leaderboard {
+  padding: 24px 25px;
+    border: 2px linear-gradient(
+    110deg,
+    rgba(201, 162, 75, 0.58),
+    rgba(201, 162, 75, 0.18) 38%,
+    rgba(91, 159, 196, 0.18) 62%,
+    rgba(91, 159, 196, 0.58)
+  ) border-box;
+  border-radius: 3px;
 }

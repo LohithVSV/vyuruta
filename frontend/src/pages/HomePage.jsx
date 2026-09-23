@@ -1,6 +1,6 @@
 // src/pages/HomePage.jsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import fireCharacter from "../assets/landing/fire-character.png";
@@ -30,8 +30,68 @@ export default function HomePage() {
   const [history] = useState(mockTeamHistory);
   const [feed] = useState(mockActivityFeed);
 
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+  const [leaderboardError, setLeaderboardError] = useState(false);
+
   const avatar =
     team.faction === "fire" ? fireCharacter : waterCharacter;
+
+  /*
+   * Fetch weekly leaderboard.
+   *
+   * The backend currently returns users ordered by weekly XP.
+   * We request the maximum supported amount so we can determine
+   * the current user's exact position within the returned leaderboard.
+   */
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        setLeaderboardLoading(true);
+        setLeaderboardError(false);
+
+        const response = await fetch("/leaderboard/weekly?limit=100");
+
+        if (!response.ok) {
+          throw new Error("Failed to load leaderboard");
+        }
+
+        const data = await response.json();
+        setLeaderboard(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Leaderboard error:", error);
+        setLeaderboardError(true);
+        setLeaderboard([]);
+      } finally {
+        setLeaderboardLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, []);
+
+  /*
+   * Determine the current user's position.
+   *
+   * The API returns the rows already ordered by XP descending.
+   * +1 converts the zero-based array index into the displayed rank.
+   *
+   * We check both id and username so this still works while the
+   * frontend is using mockTeam data.
+   */
+  const currentUserIndex = leaderboard.findIndex(
+    (entry) =>
+      String(entry.user_id) === String(team.id) ||
+      entry.username === team.username
+  );
+
+  const currentUserRank =
+    currentUserIndex !== -1 ? currentUserIndex + 1 : null;
+
+  const topTen = leaderboard.slice(0, 10);
+
+  const currentUserOutsideTopTen =
+    currentUserRank !== null && currentUserRank > 10;
 
   const handleSignOut = () => {
     navigate("/auth");
@@ -96,13 +156,14 @@ export default function HomePage() {
 
       <main className="home__content">
 
-        {/* -----------------------------------------------
+        {/* =================================================
             LEFT / CENTER
-        ------------------------------------------------ */}
+        ================================================= */}
 
         <section className="home__main">
 
           {/* Welcome */}
+
           <div className="home__welcome">
 
             <span className="home__eyebrow">
@@ -121,7 +182,10 @@ export default function HomePage() {
           </div>
 
 
-          {/* Active Battles */}
+          {/* =================================================
+              ACTIVE BATTLES
+          ================================================= */}
+
           <section className="battles">
 
             <div className="section-heading">
@@ -200,7 +264,10 @@ export default function HomePage() {
 
                     <button
                       className="battle-row__arrow"
-                      onClick={() => navigate(`/battle/${battle.id}`)}
+                      onClick={() =>
+                        navigate(`/battle/${battle.id}`)
+                      }
+                      aria-label={`Open battle against ${battle.opponent}`}
                     >
                       →
                     </button>
@@ -216,10 +283,16 @@ export default function HomePage() {
           </section>
 
 
-          {/* Bottom information */}
+          {/* =================================================
+              LOWER CONTENT
+          ================================================= */}
+
           <div className="home__lower">
 
-            {/* Activity */}
+            {/* -----------------------------------------------
+                CAMPUS ACTIVITY
+            ----------------------------------------------- */}
+
             <section className="activity">
 
               <div className="section-heading section-heading--small">
@@ -259,7 +332,123 @@ export default function HomePage() {
             </section>
 
 
-            {/* Quick stats */}
+            {/* -----------------------------------------------
+                LEADERBOARD
+            ----------------------------------------------- */}
+
+            <section className="leaderboard">
+
+              <div className="section-heading section-heading--small">
+
+                <div>
+                  <span className="section-heading__eyebrow">
+                    THIS WEEK
+                  </span>
+
+                  <h2>Leaderboard</h2>
+                </div>
+
+              </div>
+
+
+              {leaderboardLoading ? (
+
+                <div className="leaderboard__state">
+                  Loading rankings...
+                </div>
+
+              ) : leaderboardError ? (
+
+                <div className="leaderboard__state">
+                  Unable to load rankings.
+                </div>
+
+              ) : leaderboard.length === 0 ? (
+
+                <div className="leaderboard__state">
+                  No rankings yet.
+                </div>
+
+              ) : (
+
+                <div className="leaderboard__list">
+
+                  {topTen.map((entry, index) => {
+
+                    const rank = index + 1;
+
+                    const isCurrentUser =
+                      String(entry.user_id) === String(team.id) ||
+                      entry.username === team.username;
+
+                    return (
+                      <div
+                        key={entry.user_id}
+                        className={`leaderboard__row ${
+                          isCurrentUser
+                            ? "leaderboard__row--current"
+                            : ""
+                        }`}
+                      >
+
+                        <span className="leaderboard__rank">
+                          {String(rank).padStart(2, "0")}
+                        </span>
+
+                        <span className="leaderboard__name">
+                          {entry.username}
+                        </span>
+
+                        <span className="leaderboard__xp">
+                          {entry.xp} XP
+                        </span>
+
+                      </div>
+                    );
+                  })}
+
+
+                  {/* -----------------------------------------
+                      CURRENT USER OUTSIDE TOP 10
+                  ----------------------------------------- */}
+
+                  {currentUserOutsideTopTen && (
+                    <>
+                      <div className="leaderboard__separator">
+                        <span />
+                        <small>YOUR POSITION</small>
+                        <span />
+                      </div>
+
+                      <div className="leaderboard__row leaderboard__row--current leaderboard__row--self">
+
+                        <span className="leaderboard__rank">
+                          {String(currentUserRank).padStart(2, "0")}
+                        </span>
+
+                        <span className="leaderboard__name">
+                          {team.username}
+                        </span>
+
+                        <span className="leaderboard__xp">
+                          {leaderboard[currentUserIndex]?.xp ?? 0} XP
+                        </span>
+
+                      </div>
+                    </>
+                  )}
+
+                </div>
+
+              )}
+
+            </section>
+
+
+            {/* -----------------------------------------------
+                QUICK STATS
+            ----------------------------------------------- */}
+
             <section className="territory">
 
               <span className="section-heading__eyebrow">
@@ -347,6 +536,7 @@ export default function HomePage() {
 
 
           {/* Currency */}
+
           <div className="profile__currency">
 
             <div>
@@ -362,6 +552,7 @@ export default function HomePage() {
 
 
           {/* Record */}
+
           <div className="profile__record">
 
             <div>
@@ -383,6 +574,7 @@ export default function HomePage() {
 
 
           {/* History */}
+
           <div className="profile__history">
 
             <div className="profile__history-heading">
