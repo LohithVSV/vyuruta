@@ -1,0 +1,151 @@
+.reveal-overlay {
+  position: fixed;
+  inset: 0;
+  background: #060606;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.7s ease;
+}
+
+.reveal-overlay.exiting {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.throne-fallback {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.skip-btn {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 6px 16px;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+.skip-btn:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
+}
+
+.reveal-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 24px;
+  animation: stageFade var(--beat-duration) ease forwards;
+}
+
+@keyframes stageFade {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.reveal-line {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: clamp(20px, 3.2vw, 34px);
+  color: #eae6dd;
+  max-width: 700px;
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+}
+
+/* Throne beat */
+.throne-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.throne-img {
+  max-height: 100vh;
+  max-width: 100vw;
+  object-fit: contain;
+  filter: brightness(0.9);
+  animation: throneIn var(--beat-duration) fade forwards;
+}
+@keyframes throneIn {
+  0% { opacity: 0; transform: scale(1.05); }
+  20% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.throne-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 40%, #060606 95%);
+  pointer-events: none;
+}
+
+/* Faction accent glows */
+.faction-fire .reveal-line,
+.faction-fire .city-name {
+  text-shadow: 0 0 24px rgba(255, 100, 40, 0.35);
+}
+.faction-fire .throne-vignette {
+  background: radial-gradient(circle at center, transparent 30%, rgba(20, 5, 0, 0.6) 70%, #060606 100%);
+}
+
+.faction-water .reveal-line,
+.faction-water .city-name {
+  text-shadow: 0 0 24px rgba(60, 200, 220, 0.35);
+}
+.faction-water .throne-vignette {
+  background: radial-gradient(circle at center, transparent 30%, rgba(0, 15, 20, 0.6) 70%, #060606 100%);
+}
+
+/* City reveal beat */
+.city-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.city-sub {
+  font-family: "Cormorant Garamond", serif;
+  letter-spacing: 6px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.city-name {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: clamp(28px, 5.5vw, 56px);
+  letter-spacing: 3px;
+  color: #f4efe4;
+  margin: 0;
+}
+
+/* Brand stamp */
+.brand-stamp {
+  display: block;
+  width: min(78vw, 560px);
+  height: auto;
+  max-height: 30vh;
+  object-fit: contain;
+  opacity: 0.9;
+}
