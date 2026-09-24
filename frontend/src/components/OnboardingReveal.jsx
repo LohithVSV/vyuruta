@@ -18,12 +18,12 @@ export default function OnboardingReveal({ element, cityName, onComplete }) {
   const EXIT_DURATION = 700; // ms, must match CSS transition below
 
   const beats = [
-    { text: "The old campus wars ended. New ones began.", duration: 4000 },
-    { text: "No swords. No armies. Just code, and the will to conquer.", duration: 4200 },
-    { type: "throne", duration: 4500 },
-    { text: "You have ascended.", duration: 2800 },
-    { type: "city", duration: 3200 },
-    { type: "brand", duration: 2200 },
+    { text: "The old campus wars ended. New ones began.", duration: 5000 },
+    { text: "No swords. No armies. Just code, and the will to conquer.", duration: 5200 },
+    { type: "throne", duration: 3500 },
+    { text: "You have ascended.", duration: 3800 },
+    { type: "city", duration: 4200 },
+    { type: "brand", duration: 3200 },
   ];
 
   useEffect(() => {

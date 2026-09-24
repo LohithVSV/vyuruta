@@ -11,6 +11,10 @@ class UserResponse(BaseModel):
     email: str
     username: str
     college_name: str
+    currency: int
+    xp: int
+    win_streak: int
+    has_hosting_rights: bool
 
     class Config:
         from_attributes = True
