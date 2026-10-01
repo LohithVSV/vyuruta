@@ -3,6 +3,7 @@ import Landing from "./components/Landing";
 import AuthPage from "./pages/AuthPage";
 import HomePage from './pages/HomePage';
 import TestReveal from "./pages/TestReveal";
+import TerritoryMap from "./components/TerritoryMap";
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/test-reveal/:element/:city" element={<TestReveal />} />
+        <Route path="/map" element={<TerritoryMap />} />
       </Routes>
     </BrowserRouter>
   );
