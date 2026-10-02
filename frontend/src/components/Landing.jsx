@@ -4,7 +4,7 @@ import fireCharacter from '../assets/landing/fire-character.png';
 import logo from '../assets/landing/logo.png';
 import './Landing.css';
 
-export default function Landing() {
+export default function Landing({ onGetStarted }) {
   const [waterOk, setWaterOk] = useState(true);
   const [fireOk, setFireOk] = useState(true);
   const [logoOk, setLogoOk] = useState(true);
@@ -56,7 +56,9 @@ Your weekly wins determine your rank as you compete to become the **ultimate rul
 
 
           </p>
-          <button className="cta-button cta-hero">Start Conquering</button>
+          <button className="cta-button cta-hero" onClick={onGetStarted}>
+            Start Conquering
+          </button>
         </div>
 
         <div className="hero-character hero-character-agni">
@@ -115,7 +117,9 @@ Prove your coding skills and claim the top spot.</p>
             </div>
           </div>
 
-          <button className="cta-button">Get Started</button>
+          <button className="cta-button" onClick={onGetStarted}>
+            Get Started
+          </button>
         </div>
       </section>
     </div>

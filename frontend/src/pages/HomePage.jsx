@@ -8,15 +8,20 @@ import waterCharacter from "../assets/landing/water-character.png";
 import vyurutaLogo from "../assets/landing/logo.png";
 
 import {
-  mockTeam,
+  mockPlayer,
   mockBattles,
-  mockTeamHistory,
-  mockActivityFeed,
+  mockHistory,
+  mockFeed,
 } from "../data/mockData";
 
 import "./HomePage.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 const BATTLE_STATUS_LABEL = {
+  proposed: "Awaiting your response",
+  terms_accepted: "Terms accepted",
+  scheduled: "Scheduled",
   awaiting_time_slot: "Awaiting time slot",
   terms_sent: "Terms sent",
   awaiting_terms: "Awaiting your response",
@@ -32,10 +37,19 @@ export default function HomePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const [team] = useState(mockTeam);
+  const team = {
+    id: mockPlayer.id,
+    username: mockPlayer.name,
+    faction: mockPlayer.city.id.startsWith("agni-") ? "fire" : "water",
+    citiesHeld: 1,
+    wins: mockPlayer.wins,
+    losses: mockPlayer.losses,
+    streak: mockPlayer.streak,
+    currency: mockPlayer.currency,
+  };
   const [battles] = useState(mockBattles);
-  const [history] = useState(mockTeamHistory);
-  const [feed] = useState(mockActivityFeed);
+  const [history] = useState(mockHistory);
+  const [feed] = useState(mockFeed);
 
   const [leaderboard, setLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
@@ -57,7 +71,9 @@ export default function HomePage() {
         setLeaderboardLoading(true);
         setLeaderboardError(false);
 
-        const response = await fetch("/leaderboard/weekly?limit=100");
+        const response = await fetch(
+          `${API_BASE_URL}/leaderboard/weekly?limit=100`,
+        );
 
         if (!response.ok) {
           throw new Error("Failed to load leaderboard");
@@ -101,6 +117,7 @@ export default function HomePage() {
     currentUserRank !== null && currentUserRank > 10;
 
   const handleSignOut = () => {
+    localStorage.removeItem("vyuruta_access_token");
     navigate("/auth");
   };
 
@@ -127,7 +144,7 @@ export default function HomePage() {
 
           <button
             className="home__nav-item home__nav-item--active"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/home")}
           >
             Home
           </button>
@@ -261,7 +278,7 @@ export default function HomePage() {
                       </strong>
 
                       <small>
-                        {battle.city}
+                        {battle.cityName}
                       </small>
 
                     </div>
@@ -539,7 +556,7 @@ export default function HomePage() {
 
             <h2>@{team.username}</h2>
 
-            <p>{team.college}</p>
+            <p>{mockPlayer.city.name}</p>
 
           </div>
 
@@ -596,7 +613,9 @@ export default function HomePage() {
 
                 <li
                   key={item.id}
-                  className={`history-item history-item--${item.type}`}
+                  className={`history-item ${
+                    item.type ? `history-item--${item.type}` : ""
+                  }`}
                 >
 
                   <span className="history-item__marker" />

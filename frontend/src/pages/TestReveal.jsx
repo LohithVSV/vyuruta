@@ -1,6 +1,6 @@
 // src/pages/TestReveal.jsx
 import { useParams, useNavigate } from "react-router-dom";
-import OnboardingReveal from "../components/onBoardingReveal";
+import OnboardingReveal from "../components/OnboardingReveal";
 
 export default function TestReveal() {
   const { element, city } = useParams();

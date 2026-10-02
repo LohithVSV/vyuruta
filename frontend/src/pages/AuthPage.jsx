@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./AuthPage.css";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const FACTIONS = [
   { id: "fire", label: "Fire", tagline: "Aggressive · fast conquest" },
@@ -7,16 +10,17 @@ const FACTIONS = [
 ];
 
 export default function AuthPage() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState("login"); // "login" | "signup"
   const [step, setStep] = useState(1); // signup only: 1 | 2
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [login, setLogin] = useState({ identifier: "", password: "" });
+  const [login, setLogin] = useState({ email: "", password: "" });
   const [signup, setSignup] = useState({
     email: "",
     password: "",
-    college: "",
+    college_name: "",
     username: "",
     faction: "",
   });
@@ -38,22 +42,23 @@ export default function AuthPage() {
   async function handleLoginSubmit(e) {
     e.preventDefault();
     setError("");
-    if (!login.identifier || !login.password) {
-      setError("Enter your email/username and password.");
+    if (!login.email || !login.password) {
+      setError("Enter your email and password.");
       return;
     }
     setLoading(true);
     try {
-      // TODO: wire to FastAPI once the auth route exists
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(login),
       });
-      if (!res.ok) throw new Error("Invalid credentials");
       const data = await res.json();
-      console.log("logged in", data);
-      // TODO: redirect to /map or wherever the game home is
+      if (!res.ok) {
+        throw new Error(data.detail || "Invalid credentials");
+      }
+      localStorage.setItem("vyuruta_access_token", data.access_token);
+      navigate("/home");
     } catch (err) {
       setError(err.message || "Login failed. Try again.");
     } finally {
@@ -64,7 +69,7 @@ export default function AuthPage() {
   function handleStep1Next(e) {
     e.preventDefault();
     setError("");
-    if (!signup.email || !signup.password || !signup.college) {
+    if (!signup.email || !signup.password || !signup.college_name) {
       setError("Fill in email, password, and college to continue.");
       return;
     }
@@ -84,16 +89,16 @@ export default function AuthPage() {
     }
     setLoading(true);
     try {
-      // TODO: wire to FastAPI once the auth route exists
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(signup),
       });
-      if (!res.ok) throw new Error("Could not create account");
       const data = await res.json();
-      console.log("signed up", data);
-      // TODO: redirect to /map — a city gets auto-assigned on the backend
+      if (!res.ok) {
+        throw new Error(data.detail || "Could not create account");
+      }
+      navigate(`/reveal/${signup.faction}/NEW-CITY`);
     } catch (err) {
       setError(err.message || "Signup failed. Try again.");
     } finally {
@@ -126,11 +131,11 @@ export default function AuthPage() {
         {mode === "login" && (
           <form className="auth-form" onSubmit={handleLoginSubmit}>
             <label className="field">
-              <span>Email or Username</span>
+              <span>Email</span>
               <input
-                type="text"
-                value={login.identifier}
-                onChange={(e) => updateLogin("identifier", e.target.value)}
+                type="email"
+                value={login.email}
+                onChange={(e) => updateLogin("email", e.target.value)}
                 autoComplete="username"
               />
             </label>
@@ -181,8 +186,8 @@ export default function AuthPage() {
               <span>College</span>
               <input
                 type="text"
-                value={signup.college}
-                onChange={(e) => updateSignup("college", e.target.value)}
+                value={signup.college_name}
+                onChange={(e) => updateSignup("college_name", e.target.value)}
               />
             </label>
 
