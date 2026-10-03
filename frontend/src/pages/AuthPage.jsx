@@ -57,8 +57,25 @@ export default function AuthPage() {
       if (!res.ok) {
         throw new Error(data.detail || "Invalid credentials");
       }
+      const profileResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+      const profile = await profileResponse.json();
+      if (!profileResponse.ok) {
+        throw new Error(profile.detail || "Could not load your account");
+      }
+
       localStorage.setItem("vyuruta_access_token", data.access_token);
-      navigate("/home");
+      const onboardingKey = `vyuruta_onboarding_seen_user:${profile.id}`;
+      const faction =
+        localStorage.getItem(`vyuruta_faction_user:${profile.id}`) || "fire";
+      if (localStorage.getItem(onboardingKey) !== "true") {
+        navigate(`/reveal/${faction}/NEW-CITY`, {
+          state: { onboardingKey },
+        });
+      } else {
+        navigate("/home");
+      }
     } catch (err) {
       setError(err.message || "Login failed. Try again.");
     } finally {
@@ -98,7 +115,10 @@ export default function AuthPage() {
       if (!res.ok) {
         throw new Error(data.detail || "Could not create account");
       }
-      navigate(`/reveal/${signup.faction}/NEW-CITY`);
+      localStorage.setItem(`vyuruta_faction_user:${data.id}`, signup.faction);
+      navigate(`/reveal/${signup.faction}/NEW-CITY`, {
+        state: { onboardingKey: `vyuruta_onboarding_seen_user:${data.id}` },
+      });
     } catch (err) {
       setError(err.message || "Signup failed. Try again.");
     } finally {

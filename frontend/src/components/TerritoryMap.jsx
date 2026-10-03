@@ -21,11 +21,13 @@ const homeTerritory = territories.find((territory) =>
 );
 const homeCityMarker = homeTerritory?.element === "water" ? waterCityMarker : fireCityMarker;
 
+const getUnclaimedCityName = (index) => `Unallocated City ${index + 1}`;
+
 const CITIES = territories.flatMap((territory) =>
   territory.citySpots.map((_, index) => {
     const id = `${territory.id}-${index + 1}`;
     const owner = OWNERS[id];
-    const name = owner?.cityName || `Wild Forest ${index + 1}`;
+    const name = owner?.cityName || getUnclaimedCityName(index);
     return {
       id,
       territory,
@@ -99,7 +101,7 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
   const fitOverview = useCallback(() => {
     const { vw, vh } = size();
     const isMobile = window.innerWidth <= 700;
-    const islandSize = isMobile ? 155 : 220;
+    const islandSize = isMobile ? 230 : 330;
     const halfIslandWidth = islandSize / 2;
     const halfIslandHeight = islandSize * 0.375;
     const sidebar = rootRef.current?.parentElement.querySelector(".map-sidebar");
@@ -297,7 +299,7 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
     setSelectedIsland(t);
     setSelectedCity({
       id,
-      name: owner?.cityName || `Wild Forest ${index + 1}`,
+      name: owner?.cityName || getUnclaimedCityName(index),
       island: t.name,
       element: t.element,
       ownerId: owner?.ownerId || null,
@@ -481,8 +483,8 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
                     else delete cityRefs.current[id];
                   }}
                   style={{ left: `${s.x}%`, top: `${s.y}%` }}
-                  aria-label={`${owner?.cityName || `Wild Forest ${i + 1}`} - ${t.name}`}
-                  title={`${owner?.cityName || `Wild Forest ${i + 1}`} - ${t.name}`}
+                  aria-label={`${owner?.cityName || getUnclaimedCityName(i)} - ${t.name}`}
+                  title={`${owner?.cityName || getUnclaimedCityName(i)} - ${t.name}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     selectCity(t, i);
@@ -538,7 +540,7 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
               </div>
             </div>
             <div className="sidebar-stats">
-              <div><span>COINS</span><strong>{player.currency.toLocaleString()}</strong></div>
+              <div><span>TREASURE</span><strong>{player.currency.toLocaleString()}</strong></div>
               <div><span>WINS</span><strong>{player.wins}</strong></div>
               <div><span>LOSSES</span><strong>{player.losses}</strong></div>
               <div><span>STREAK</span><strong>{player.streak}</strong></div>
@@ -559,14 +561,14 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
             <p className="sidebar-subtitle">{selectedCity.island}</p>
             <div className="city-owner-row">
               <span>RULER</span>
-              <strong>{selectedCity.ownerName || "Unallocated"}</strong>
+              <strong>{selectedCity.ownerName || "No king"}</strong>
             </div>
             <p className="sidebar-copy">
               {selectedCity.isMine
                 ? "This is your home city."
                 : selectedCity.ownerName
                   ? `${selectedCity.ownerName} holds this city.`
-                  : "This city has not been claimed yet."}
+                  : "No king rules this city yet."}
             </p>
             {selectedCity.ownerName && !selectedCity.isMine && (
               <button className="sidebar-primary" onClick={() => setPanelMode("battle-setup")}>

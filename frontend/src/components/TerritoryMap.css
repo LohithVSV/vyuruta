@@ -430,7 +430,7 @@
 
 .map-island img {
   display: block;
-  width: 220px;
+  width: 330px;
   height: auto;
   object-fit: contain;
   pointer-events: none;
@@ -489,8 +489,8 @@
 .city-pin {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 30px;
-  height: 23px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -499,12 +499,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.18s ease;
 }
 
 .city-pin img {
+  position: absolute;
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 22px;
+  height: 17px;
   object-fit: contain;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.65));
   pointer-events: none;
@@ -525,15 +527,37 @@
 }
 
 .pin-selected img {
-  filter: drop-shadow(0 0 7px rgba(255, 255, 255, 0.95));
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.95));
+}
+
+.pin-selected {
+  z-index: 10;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.pin-selected::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 197, 95, 0.26), rgba(255, 197, 95, 0.08) 45%, transparent 72%);
+  box-shadow: 0 0 14px rgba(255, 186, 86, 0.32), 0 0 24px rgba(255, 186, 86, 0.18);
+  animation: city-aura 1.6s ease-in-out infinite alternate;
 }
 
 .city-pin:hover {
   z-index: 10;
 }
 
-.pin-selected {
-  z-index: 10;
+@keyframes city-aura {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
 }
 
 
@@ -779,7 +803,12 @@
   }
 
   .city-pin {
-    width: 25px;
-    height: 19px;
+    width: 22px;
+    height: 20px;
+  }
+
+  .city-pin img {
+    width: 14px;
+    height: 11px;
   }
 }
