@@ -1,36 +1,45 @@
-import requests
+import os
+import subprocess
+import sys
+import tempfile
 
-PISTON_URL = "https://emkc.org/api/v2/piston/execute"
+MAX_OUTPUT = 10_000  # chars
 
 
 def run_python(code: str, stdin: str = "", timeout_ms: int = 5000) -> dict:
     """
-    Runs Python code against Piston's public execution API.
+    Runs Python code in a subprocess with a timeout and a stripped environment.
     Returns {"stdout": str, "stderr": str, "error": str | None}.
     error is None only when the code ran successfully (exit code 0).
     """
-    payload = {
-        "language": "python",
-        "version": "*",
-        "files": [{"content": code}],
-        "stdin": stdin,
-        "run_timeout": timeout_ms,
-    }
-    try:
-        resp = requests.post(PISTON_URL, json=payload, timeout=15)
-        resp.raise_for_status()
-    except requests.RequestException as e:
-        return {"stdout": "", "stderr": "", "error": f"Judge unreachable: {e}"}
+    # Minimal env so user code can't read your DB URL / secrets from env vars.
+    env = {}
+    for key in ("SYSTEMROOT", "PATH"):
+        if key in os.environ:
+            env[key] = os.environ[key]
 
-    data = resp.json()
-    run = data.get("run", {})
-    compile_ = data.get("compile", {})
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "main.py")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(code)
 
-    if compile_ and compile_.get("code") not in (None, 0):
-        return {"stdout": "", "stderr": compile_.get("stderr", ""), "error": "Compile error"}
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-I", path],
+                input=stdin,
+                capture_output=True,
+                text=True,
+                timeout=max(timeout_ms, 1000) / 1000 + 1,
+                cwd=tmp,
+                env=env,
+            )
+        except subprocess.TimeoutExpired:
+            return {"stdout": "", "stderr": "", "error": "Time limit exceeded"}
+        except Exception as e:
+            return {"stdout": "", "stderr": "", "error": f"Judge error: {e}"}
 
     return {
-        "stdout": run.get("stdout", ""),
-        "stderr": run.get("stderr", ""),
-        "error": None if run.get("code") == 0 else f"Runtime error (exit {run.get('code')})",
+        "stdout": proc.stdout[:MAX_OUTPUT],
+        "stderr": proc.stderr[:MAX_OUTPUT],
+        "error": None if proc.returncode == 0 else f"Runtime error (exit {proc.returncode})",
     }

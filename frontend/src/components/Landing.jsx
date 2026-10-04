@@ -2,6 +2,7 @@ import { useState } from 'react';
 import waterCharacter from '../assets/landing/water-character.png';
 import fireCharacter from '../assets/landing/fire-character.png';
 import logo from '../assets/landing/logo.png';
+import map from '../assets/landing/map.png';
 import './Landing.css';
 
 export default function Landing({ onGetStarted }) {
@@ -84,6 +85,16 @@ Your weekly wins determine your rank as you compete to become the **ultimate rul
             Vyuruta is a solo coding strategy game where players battle others through coding challenges to earn points and tribute.
 Choose Fire or Water, climb the weekly rankings, and compete to become the ultimate ruler.
           </p>
+
+          <div className="map-cta">
+            <div className="map-copy">
+              <span className="map-badge">Campaign map</span>
+              <h3>This is the map you need to conquer.</h3>
+            </div>
+            <div className="map-frame">
+              <img src={map} alt="Vyuruta campaign map" className="map-image" />
+            </div>
+          </div>
 
           <div className="about-grid">
             <div className="about-card">

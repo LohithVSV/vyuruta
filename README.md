@@ -42,12 +42,12 @@ Campus DSA-battle strategy game. Solo build. Target: prove it on home campus (~3
 ### Frontend — pages built
 
 **1. AuthPage** (`src/pages/AuthPage.jsx` + `.css`)
-Login/Signup, two-step signup (email/password/college → username + Fire/Water faction pick). Routed via `App.jsx` (`/` → Landing, `/auth` → AuthPage).
+Login/Signup, two-step signup (email/password/college → username + Fire/Water faction pick). Routed via `App.jsx` (`/auth` → AuthPage); successful login opens `/home`, and signup runs the onboarding reveal before opening `/home`.
 
-**2. Landing page** — done.
+**2. Landing page** — done at `/`; both calls to action open `/auth`.
 TODO: add previews of the game map and code-battle mechanic (not done yet).
 
-**3. Home/dashboard page** (`src/pages/HomePage.jsx` + `.css`)
+**3. Home/dashboard page** (`src/pages/HomePage.jsx` + `.css`), routed at `/home`
 Current layout:
 - Fixed top-left logo bar ("Vyuruta / Code to Conquer") + Map link, stays visible on scroll
 - Main content: Active Battles section (cards per battle, "+ Propose" button, empty state) + Campus-wide activity feed (scrollable)
@@ -61,7 +61,7 @@ Current layout:
 
 ### Frontend — not built yet
 - Wire HomePage to real FastAPI endpoints once backend is deployed (or point at `localhost:8000` directly — faster than deploying first)
-- Full Map page (`/map` stub route referenced in HomePage nav)
+- Territory map is available at `/map` and linked from the dashboard.
 - Battle proposal flow page (`/battle/new` stub route referenced in HomePage nav)
 - Daily challenge feature
 
