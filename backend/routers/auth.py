@@ -10,6 +10,12 @@ from core.security import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+@router.get("/username-availability")
+def username_availability(username: str, db: Session = Depends(get_db)):
+    exists = db.query(User.id).filter(User.username == username).first() is not None
+    return {"available": not exists}
+
+
 @router.post("/signup", response_model=UserResponse)
 def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     existing_email = db.query(User).filter(User.email == user_data.email).first()

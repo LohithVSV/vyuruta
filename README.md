@@ -50,17 +50,17 @@ TODO: add previews of the game map and code-battle mechanic (not done yet).
 **3. Home/dashboard page** (`src/pages/HomePage.jsx` + `.css`), routed at `/home`
 Current layout:
 - Fixed top-left logo bar ("Vyuruta / Code to Conquer") + Map link, stays visible on scroll
-- Main content: Active Battles section (cards per battle, "+ Propose" button, empty state) + Campus-wide activity feed (scrollable)
+- Main content: Active Battles section (cards per battle, "+ Propose" button, empty state) + Recent Realm Activity feed
 - Right sidebar profile panel: faction avatar (`fire-character.png` / `water-character.png` from `src/assets/landing/` — one shared image per faction for now, per-user custom avatars planned later), username, college, faction badge, **stat grid (currency, cities held, win/loss record, streak) — this is the only place these stats are shown**, team-only history feed (separate from campus-wide feed), Sign Out button
 - Background: custom generated image (`src/assets/home/dashboard-bg.png`) — dark ruins/forest, faint fire embers left / water sparkles right, with a dark gradient overlay so panels (semi-transparent + blurred) stay readable on top
-- Built against `src/data/mockData.js` (mock team/battles/history/feed, shaped like the real API response). Two `TODO` comments mark where to swap in real fetches: the `useState` initial values (→ `useEffect` + fetch) and the sign-out handler (→ real Supabase sign-out)
+- Connected to the FastAPI backend for the signed-in profile, cities, battles, sprint history, recent realm activity, and weekly leaderboard. Home data is loaded through `src/api.js`; profile wins/losses are derived from completed sprint records.
 
 **Design system** (carries forward to future pages):
 - Palette — bg `#12160F`, panels `#1B2118` (semi-transparent on Home), hairline `#2E3627`, parchment text `#E9E4D3`, muted text `#9CA38C`, gold accent `#C9A24B`, fire `#E1552E`, water `#2E8BC0`
 - Fonts — `Spectral` (serif, headings/stat numbers) + `Inter` (body)
 
 ### Frontend — not built yet
-- Wire HomePage to real FastAPI endpoints once backend is deployed (or point at `localhost:8000` directly — faster than deploying first)
+- Backend endpoints are configurable with `VITE_API_URL` (defaults to `http://localhost:8000`).
 - Territory map is available at `/map` and linked from the dashboard.
 - Battle proposal flow page (`/battle/new` stub route referenced in HomePage nav)
 - Daily challenge feature

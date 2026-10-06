@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
 from database import get_db
@@ -10,6 +10,7 @@ from models.city import City
 from models.battle import Battle
 from models.sprint import Sprint
 from models.tribute import Tribute
+from schemas.activity import RecentBattleActivity
 from schemas.battle import BattleCreate, BattleResponse
 from schemas.tribute import TributeChoice
 from routers.problems import pick_random_problem
@@ -64,6 +65,33 @@ def get_my_battles(
         .all()
     )
     return battles
+
+
+@router.get("/recent", response_model=list[RecentBattleActivity])
+def get_recent_battles(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Recent challenge activity across the realm."""
+    battles = (
+        db.query(Battle)
+        .options(
+            joinedload(Battle.challenger),
+            joinedload(Battle.opponent),
+            joinedload(Battle.city),
+        )
+        .order_by(Battle.created_at.desc())
+        .limit(10)
+        .all()
+    )
+    return [
+        RecentBattleActivity(
+            id=battle.id,
+            text=f"{battle.challenger.username} challenged {battle.opponent.username} for {battle.city.name}",
+            created_at=battle.created_at,
+        )
+        for battle in battles
+    ]
 
 
 @router.post("/{battle_id}/accept", response_model=BattleResponse)

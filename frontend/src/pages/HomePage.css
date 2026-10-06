@@ -389,6 +389,27 @@
    MAIN CONTENT
    ========================================================= */
 
+.home__state {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 24px;
+  color: var(--text);
+  text-align: center;
+}
+
+.home__state button {
+  padding: 10px 16px;
+  border: 1px solid var(--fire);
+  background: rgba(201, 162, 75, 0.08);
+  color: var(--fire);
+  cursor: pointer;
+}
+
 .home__content {
   position: relative;
 
@@ -790,6 +811,13 @@
   margin: 0;
   
   padding: 0;
+}
+
+.activity__empty {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.74rem;
 }
 
 .activity__item {

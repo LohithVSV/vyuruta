@@ -1,43 +1,38 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { territories } from "../data/cityData";
-import { DEFAULT_TERMS, mockPlayer, mockPlayers } from "../data/mockData";
+import { DEFAULT_TERMS } from "../data/mockData";
 import backgroundSea from "../assets/maps/background-sea.png";
 import fireCityMarker from "../assets/maps/markers/city-fire.png";
 import waterCityMarker from "../assets/maps/markers/city-water.png";
 import "./TerritoryMap.css";
 
 const WORLD = 2400;
-const MAX_ZOOM = 2.5;
+const MAX_ZOOM = 5;
 const MIN_ZOOM = 0.05;
 const TAP_SLOP = 6;
+const HOME_CITY_ZOOM = 2.48;
 
-// city id -> owner, built from mock data (ids look like "agni-1-3")
-const OWNERS = {};
-[mockPlayer, ...mockPlayers].forEach((p) => {
-  OWNERS[p.city.id] = { ownerId: p.id, ownerName: p.name, cityName: p.city.name };
-});
-const homeTerritory = territories.find((territory) =>
-  mockPlayer.city.id.startsWith(`${territory.id}-`)
-);
-const homeCityMarker = homeTerritory?.element === "water" ? waterCityMarker : fireCityMarker;
-
-const getUnclaimedCityName = (index) => `Unallocated City ${index + 1}`;
-
-const CITIES = territories.flatMap((territory) =>
-  territory.citySpots.map((_, index) => {
-    const id = `${territory.id}-${index + 1}`;
-    const owner = OWNERS[id];
-    const name = owner?.cityName || getUnclaimedCityName(index);
-    return {
-      id,
-      territory,
-      index,
-      owner,
-      name,
-      searchName: owner ? name : `${name} - ${territory.name}`,
-    };
-  })
-);
+// Builds the list of all 100 map spots. `owners` maps a map id like "agni-1-3"
+// to { ownerId, ownerName, cityName, cityDbId } (comes from the backend).
+function buildCities(owners) {
+  return territories.flatMap((territory) =>
+    territory.citySpots.map((_, index) => {
+      const id = `${territory.id}-${index + 1}`;
+      const owner = owners[id];
+      const name =
+        owner?.cityName ||
+        `${territory.name} Forest ${String(index + 1).padStart(2, "0")}`;
+      return {
+        id,
+        territory,
+        index,
+        owner,
+        name,
+        searchName: owner ? name : `${name} - ${territory.name}`,
+      };
+    })
+  );
+}
 
 function getTerritoryPosition(territory, isMobile) {
   if (!isMobile) return territory.position;
@@ -65,14 +60,21 @@ function clampView({ x, y, z }, vw, vh, minZoom) {
   };
 }
 
-function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
+function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
+  const OWNERS = owners;
+  const CITIES = useMemo(() => buildCities(owners), [owners]);
+  const homeTerritory =
+    territories.find((territory) =>
+      player.city?.id?.startsWith(`${territory.id}-`)
+    ) ?? null;
+  const homeCityMarker = player.city?.id?.startsWith("jala-") ? waterCityMarker : fireCityMarker;
   const rootRef = useRef(null);
   const overviewZoomRef = useRef(MIN_ZOOM);
   const [view, setView] = useState({ x: 0, y: 0, z: 0.8 });
   const viewRef = useRef(view);
   const [animating, setAnimating] = useState(false);
   const [selectedCity, setSelectedCity] = useState(null);
-  const [selectedIsland, setSelectedIsland] = useState(null);
+  const [selectedIsland, setSelectedIsland] = useState(homeTerritory);
   const [citySearch, setCitySearch] = useState("");
   const [panelMode, setPanelMode] = useState("profile");
   const [battleQuestions, setBattleQuestions] = useState(DEFAULT_TERMS.questions);
@@ -101,7 +103,7 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
   const fitOverview = useCallback(() => {
     const { vw, vh } = size();
     const isMobile = window.innerWidth <= 700;
-    const islandSize = isMobile ? 230 : 330;
+    const islandSize = isMobile ? 155 : 220;
     const halfIslandWidth = islandSize / 2;
     const halfIslandHeight = islandSize * 0.375;
     const sidebar = rootRef.current?.parentElement.querySelector(".map-sidebar");
@@ -142,14 +144,6 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
       y: topOffset + availableHeight / 2 - centerY * z,
     });
   }, [apply]);
-
-  /* Start with every island in view; players can zoom into a territory. */
-  useEffect(() => {
-    fitOverview();
-    const onResize = () => fitOverview();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [fitOverview]);
 
   /* zoom about a screen point (relative to the map container) */
   const zoomAt = useCallback(
@@ -261,25 +255,41 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
     zoomAt(viewRef.current.z / 1.25, vw / 2, vh / 2);
   };
   const resetMap = () => {
-    fitOverview();
+    setSelectedCity(null);
+    setPanelMode("profile");
+    if (homeTerritory) {
+      focusIsland(homeTerritory, HOME_CITY_ZOOM);
+    } else {
+      fitOverview();
+    }
   };
 
-  const smoothApply = (next) => {
+  const smoothApply = useCallback((next) => {
     setAnimating(true);
     apply(next);
     setTimeout(() => setAnimating(false), 400);
-  };
+  }, [apply]);
 
-  const focusIsland = (t) => {
+  const focusIsland = useCallback((t, zoom = 1.3) => {
     const { vw, vh } = size();
-    const z = Math.max(viewRef.current.z, 1.3);
-    const position = getTerritoryPosition(t, window.innerWidth <= 700);
+    const isMobile = window.innerWidth <= 700;
+    const sidebar = rootRef.current?.parentElement.querySelector(".map-sidebar");
+    const sidebarHeight = isMobile
+      ? sidebar?.getBoundingClientRect().height ?? 0
+      : 0;
+    const search = rootRef.current?.querySelector(".map-search");
+    const topOffset = isMobile
+      ? (search?.getBoundingClientRect().bottom ?? 0) + 12
+      : 0;
+    const centerY = topOffset + (vh - sidebarHeight - topOffset) / 2;
+    const z = zoom;
+    const position = getTerritoryPosition(t, isMobile);
     const cx = (position.x / 100) * WORLD;
     const cy = (position.y / 100) * WORLD;
-    smoothApply({ z, x: vw / 2 - cx * z, y: vh / 2 - cy * z });
-  };
+    smoothApply({ z, x: vw / 2 - cx * z, y: centerY - cy * z });
+  }, [smoothApply]);
 
-  const focusCity = (city) => {
+  const focusCity = useCallback((city, zoom = HOME_CITY_ZOOM) => {
     const marker = cityRefs.current[city.id];
     if (!marker || !rootRef.current) return;
     const markerRect = marker.getBoundingClientRect();
@@ -288,9 +298,43 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
     const current = viewRef.current;
     const worldX = (markerRect.left + markerRect.width / 2 - rootRect.left - current.x) / current.z;
     const worldY = (markerRect.top + markerRect.height / 2 - rootRect.top - current.y) / current.z;
-    const z = Math.max(current.z, 1.6);
-    smoothApply({ z, x: vw / 2 - worldX * z, y: vh / 2 - worldY * z });
-  };
+    const isMobile = window.innerWidth <= 700;
+    const sidebar = rootRef.current.parentElement.querySelector(".map-sidebar");
+    const sidebarHeight = isMobile
+      ? sidebar?.getBoundingClientRect().height ?? 0
+      : 0;
+    const search = rootRef.current.querySelector(".map-search");
+    const topOffset = isMobile
+      ? (search?.getBoundingClientRect().bottom ?? 0) + 12
+      : 0;
+    const centerY = topOffset + (vh - sidebarHeight - topOffset) / 2;
+    const z = zoom;
+    smoothApply({ z, x: vw / 2 - worldX * z, y: centerY - worldY * z });
+  }, [smoothApply]);
+
+  /* Fit the realm, then bring the player's home island into focus. */
+  useEffect(() => {
+    fitOverview();
+    let focusFrame;
+    if (homeTerritory) {
+      focusFrame = window.requestAnimationFrame(() =>
+        focusIsland(homeTerritory, HOME_CITY_ZOOM)
+      );
+    }
+    const onResize = () => {
+      fitOverview();
+      if (homeTerritory) {
+        window.requestAnimationFrame(() =>
+          focusIsland(homeTerritory, HOME_CITY_ZOOM)
+        );
+      }
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      if (focusFrame) window.cancelAnimationFrame(focusFrame);
+    };
+  }, [fitOverview, focusIsland, homeTerritory]);
 
   /* ---------- selection ---------- */
   const selectCity = (t, index) => {
@@ -299,14 +343,17 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
     setSelectedIsland(t);
     setSelectedCity({
       id,
-      name: owner?.cityName || getUnclaimedCityName(index),
+      name:
+        owner?.cityName ||
+        `${t.name} Forest ${String(index + 1).padStart(2, "0")}`,
       island: t.name,
       element: t.element,
       ownerId: owner?.ownerId || null,
       ownerName: owner?.ownerName || null,
-      isMine: owner?.ownerId === mockPlayer.id,
+      isMine: owner?.ownerId === player.id,
+      dbId: owner?.cityDbId || null,
     });
-    setPanelMode("city");
+    setPanelMode("profile");
   };
 
   const searchCity = (query) => {
@@ -319,7 +366,7 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
     setCitySearch(city.searchName);
     setSelectedIsland(city.territory);
     selectCity(city.territory, city.index);
-    focusCity(city);
+    focusCity(city, MAX_ZOOM);
   };
 
   const sendBattleRequest = (event) => {
@@ -359,6 +406,7 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
   ).length;
 
   const stop = (e) => e.stopPropagation();
+  const activeCityId = selectedCity?.id;
 
   return (
     <div className="map-workspace">
@@ -458,7 +506,7 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
               setSelectedIsland(t);
               setSelectedCity(null);
               setPanelMode("profile");
-              focusIsland(t);
+              focusIsland(t, Math.max(viewRef.current.z, 1.3));
             }}
           >
             <img src={t.image} alt={t.name} draggable="false" />
@@ -467,7 +515,7 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
               const id = `${t.id}-${i + 1}`;
               const owner = OWNERS[id];
               const cls = owner
-                ? owner.ownerId === mockPlayer.id
+                ? owner.ownerId === player.id
                   ? "pin-mine"
                   : "pin-owned"
                 : "pin-wild";
@@ -476,15 +524,15 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
                 <button
                   key={id}
                   className={`city-pin ${cls} ${
-                    selectedCity?.id === id ? "pin-selected" : ""
+                    activeCityId === id ? `pin-selected pin-selected-${t.element}` : ""
                   }`}
                   ref={(element) => {
                     if (element) cityRefs.current[id] = element;
                     else delete cityRefs.current[id];
                   }}
                   style={{ left: `${s.x}%`, top: `${s.y}%` }}
-                  aria-label={`${owner?.cityName || getUnclaimedCityName(i)} - ${t.name}`}
-                  title={`${owner?.cityName || getUnclaimedCityName(i)} - ${t.name}`}
+                  aria-label={`${owner?.cityName || `${t.name} Forest ${String(i + 1).padStart(2, "0")}`} - ${t.name}`}
+                  title={`${owner?.cityName || `${t.name} Forest ${String(i + 1).padStart(2, "0")}`} - ${t.name}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     selectCity(t, i);
@@ -536,11 +584,11 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
               <div>
                 <p className="sidebar-eyebrow">YOUR TERRITORY</p>
                 <h1>{player.name}</h1>
-                <p className="profile-city-name">{player.city.name}</p>
+                <p className="profile-city-name">{player.city?.name || "No city yet"}</p>
               </div>
             </div>
             <div className="sidebar-stats">
-              <div><span>TREASURE</span><strong>{player.currency.toLocaleString()}</strong></div>
+              <div><span>COINS</span><strong>{player.currency.toLocaleString()}</strong></div>
               <div><span>WINS</span><strong>{player.wins}</strong></div>
               <div><span>LOSSES</span><strong>{player.losses}</strong></div>
               <div><span>STREAK</span><strong>{player.streak}</strong></div>
@@ -561,14 +609,14 @@ function TerritoryMap({ player = mockPlayer, battles = [], setBattles }) {
             <p className="sidebar-subtitle">{selectedCity.island}</p>
             <div className="city-owner-row">
               <span>RULER</span>
-              <strong>{selectedCity.ownerName || "No king"}</strong>
+              <strong>{selectedCity.ownerName || "Unallocated"}</strong>
             </div>
             <p className="sidebar-copy">
               {selectedCity.isMine
                 ? "This is your home city."
                 : selectedCity.ownerName
                   ? `${selectedCity.ownerName} holds this city.`
-                  : "No king rules this city yet."}
+                  : "This city has not been claimed yet."}
             </p>
             {selectedCity.ownerName && !selectedCity.isMine && (
               <button className="sidebar-primary" onClick={() => setPanelMode("battle-setup")}>

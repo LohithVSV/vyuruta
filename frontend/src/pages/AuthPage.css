@@ -165,46 +165,39 @@
   background: #d4af6a;
 }
 
-.factions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.faction-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.85rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
+.username-intro h2 {
+  margin: 0;
+  color: #d4af6a;
   font-family: "Cinzel", serif;
-  border: 1px solid rgba(201, 201, 201, 0.25);
-  background: rgba(255, 255, 255, 0.04);
-  color: #eae6da;
-}
-
-.faction-card.fire.selected {
-  border-color: #ff6a3d;
-  background: rgba(255, 106, 61, 0.15);
-  box-shadow: 0 0 10px rgba(255, 106, 61, 0.35);
-}
-
-.faction-card.water.selected {
-  border-color: #4fb8ff;
-  background: rgba(79, 184, 255, 0.15);
-  box-shadow: 0 0 10px rgba(79, 184, 255, 0.35);
-}
-
-.faction-name {
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
-.faction-tag {
-  font-family: "Rajdhani", sans-serif;
-  font-size: 0.68rem;
-  color: #9a978d;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
   text-align: center;
+}
+
+.username-intro p {
+  margin: 0.35rem 0 0;
+  color: #c9c3b5;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.username-availability {
+  min-height: 1rem;
+  margin: -0.65rem 0 0;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.8rem;
+}
+
+.username-availability--available {
+  color: #9bc58b;
+}
+
+.username-availability--taken,
+.username-availability--error {
+  color: #ff6a3d;
+}
+
+.username-availability--checking {
+  color: #c9c3b5;
 }

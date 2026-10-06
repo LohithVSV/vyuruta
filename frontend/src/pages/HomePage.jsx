@@ -1,35 +1,40 @@
 // src/pages/HomePage.jsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import fireCharacter from "../assets/landing/fire-character.png";
 import waterCharacter from "../assets/landing/water-character.png";
 import vyurutaLogo from "../assets/landing/logo.png";
 
-import {
-  mockPlayer,
-  mockBattles,
-  mockHistory,
-  mockFeed,
-} from "../data/mockData";
+import { api, clearToken, getToken } from "../api";
 
 import "./HomePage.css";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
 const BATTLE_STATUS_LABEL = {
-  proposed: "Awaiting your response",
-  terms_accepted: "Terms accepted",
-  scheduled: "Scheduled",
-  awaiting_time_slot: "Awaiting time slot",
-  terms_sent: "Terms sent",
-  awaiting_terms: "Awaiting your response",
+  pending: "Awaiting your response",
+  accepted: "Battle in progress",
+  awaiting_tribute: "Tribute decision pending",
 };
+
+function formatTimestamp(value) {
+  if (!value) return "Recently";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  return date.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const [dashboard, setDashboard] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+  const [leaderboardError, setLeaderboardError] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -37,71 +42,137 @@ export default function HomePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const team = {
-    id: mockPlayer.id,
-    username: mockPlayer.name,
-    faction: mockPlayer.city.id.startsWith("agni-") ? "fire" : "water",
-    citiesHeld: 1,
-    wins: mockPlayer.wins,
-    losses: mockPlayer.losses,
-    streak: mockPlayer.streak,
-    currency: mockPlayer.currency,
-  };
-  const [battles] = useState(mockBattles);
-  const [history] = useState(mockHistory);
-  const [feed] = useState(mockFeed);
-
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
-  const [leaderboardError, setLeaderboardError] = useState(false);
-
-  const avatar =
-    team.faction === "fire" ? fireCharacter : waterCharacter;
-
-  /*
-   * Fetch weekly leaderboard.
-   *
-   * The backend currently returns users ordered by weekly XP.
-   * We request the maximum supported amount so we can determine
-   * the current user's exact position within the returned leaderboard.
-   */
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        setLeaderboardLoading(true);
-        setLeaderboardError(false);
+    if (!getToken()) {
+      navigate("/auth", { replace: true });
+      return undefined;
+    }
 
-        const response = await fetch(
-          `${API_BASE_URL}/leaderboard/weekly?limit=100`,
-        );
+    let cancelled = false;
 
-        if (!response.ok) {
-          throw new Error("Failed to load leaderboard");
+    Promise.all([
+      api.me(),
+      api.myBattles(),
+      api.mySprints(),
+      api.cities(),
+      api.recentBattles(),
+      api.weeklyLeaderboard(100).then(
+        (entries) => ({ entries }),
+        (error) => ({ error }),
+      ),
+    ])
+      .then(([user, battles, sprints, cities, recentBattles, rankingResult]) => {
+        if (cancelled) return;
+        setDashboard({ user, battles, sprints, cities, recentBattles });
+        if ("error" in rankingResult) {
+          setLeaderboardError(true);
+          setLeaderboard([]);
+        } else {
+          setLeaderboardError(false);
+          setLeaderboard(rankingResult.entries);
         }
+      })
+      .catch((error) => {
+        if (!cancelled) setLoadError(error.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLeaderboardLoading(false);
+      });
 
-        const data = await response.json();
-        setLeaderboard(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Leaderboard error:", error);
-        setLeaderboardError(true);
-        setLeaderboard([]);
-      } finally {
-        setLeaderboardLoading(false);
-      }
+    return () => {
+      cancelled = true;
     };
+  }, [navigate]);
 
-    fetchLeaderboard();
-  }, []);
+  const cityById = useMemo(
+    () => new Map((dashboard?.cities ?? []).map((city) => [city.id, city])),
+    [dashboard],
+  );
+  const ownerById = useMemo(
+    () =>
+      new Map(
+        (dashboard?.cities ?? [])
+          .filter((city) => city.owner_id != null)
+          .map((city) => [city.owner_id, city.owner_username]),
+      ),
+    [dashboard],
+  );
 
-  /*
-   * Determine the current user's position.
-   *
-   * The API returns the rows already ordered by XP descending.
-   * +1 converts the zero-based array index into the displayed rank.
-   *
-   * We check both id and username so this still works while the
-   * frontend is using mockTeam data.
-   */
+  if (loadError) {
+    return (
+      <div className="home">
+        <main className="home__state" role="alert">
+          <p>Unable to load your realm: {loadError}</p>
+          <button type="button" onClick={() => window.location.reload()}>
+            Try again
+          </button>
+        </main>
+      </div>
+    );
+  }
+  if (!dashboard) {
+    return (
+      <div className="home">
+        <main className="home__state" role="status">
+          Loading your realm...
+        </main>
+      </div>
+    );
+  }
+
+  const { user, battles: allBattles, sprints, cities, recentBattles } = dashboard;
+  const playerCity = cities.find((city) => city.owner_id === user.id) ?? null;
+  const finishedSprints = sprints.filter(
+    (sprint) => sprint.status === "finished" && sprint.winner_id != null,
+  );
+  const team = {
+    id: user.id,
+    username: user.username,
+    faction: playerCity?.faction ?? "fire",
+    citiesHeld: cities.filter((city) => city.owner_id === user.id).length,
+    wins: finishedSprints.filter((sprint) => sprint.winner_id === user.id).length,
+    losses: finishedSprints.filter((sprint) => sprint.winner_id !== user.id).length,
+    streak: user.win_streak,
+    currency: user.currency,
+  };
+  const avatar = team.faction === "fire" ? fireCharacter : waterCharacter;
+  const battles = allBattles
+    .filter((battle) => ["pending", "accepted", "awaiting_tribute"].includes(battle.status))
+    .map((battle) => {
+      const opponentId =
+        battle.challenger_id === user.id ? battle.opponent_id : battle.challenger_id;
+      const city = cityById.get(battle.city_id);
+      return {
+        id: battle.id,
+        opponent: ownerById.get(opponentId) ?? `Player ${opponentId}`,
+        cityName: city?.name ?? "Unknown city",
+        status: battle.status,
+      };
+    });
+  const history = finishedSprints
+    .map((sprint) => {
+      const battle = allBattles.find((entry) => entry.id === sprint.battle_id);
+      const opponentId = battle
+        ? battle.challenger_id === user.id
+          ? battle.opponent_id
+          : battle.challenger_id
+        : null;
+      const won = sprint.winner_id === user.id;
+      return {
+        id: sprint.id,
+        type: won ? "win" : "loss",
+        text: `${won ? "Won" : "Lost"} a sprint${opponentId ? ` against ${ownerById.get(opponentId) ?? `Player ${opponentId}`}` : ""}`,
+        time: formatTimestamp(sprint.created_at),
+        createdAt: sprint.created_at,
+      };
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const feed = recentBattles.map((entry) => ({
+    id: entry.id,
+    text: entry.text,
+    time: formatTimestamp(entry.created_at),
+  }));
+
   const currentUserIndex = leaderboard.findIndex(
     (entry) =>
       String(entry.user_id) === String(team.id) ||
@@ -117,8 +188,8 @@ export default function HomePage() {
     currentUserRank !== null && currentUserRank > 10;
 
   const handleSignOut = () => {
-    localStorage.removeItem("vyuruta_access_token");
-    navigate("/auth");
+    clearToken();
+    navigate("/auth", { replace: true });
   };
 
   return (
@@ -158,7 +229,7 @@ export default function HomePage() {
 
           <button
             className="home__nav-item"
-            onClick={() => navigate("/battle/new")}
+            onClick={() => navigate("/map")}
           >
             Battles
           </button>
@@ -226,7 +297,7 @@ export default function HomePage() {
 
               <button
                 className="section-action"
-                onClick={() => navigate("/battle/new")}
+                onClick={() => navigate("/map")}
               >
                 <span>Propose Battle</span>
                 <span>+</span>
@@ -247,7 +318,7 @@ export default function HomePage() {
 
                 <button
                   className="gold-button"
-                  onClick={() => navigate("/battle/new")}
+                  onClick={() => navigate("/map")}
                 >
                   Propose your first battle
                 </button>
@@ -290,9 +361,7 @@ export default function HomePage() {
 
                     <button
                       className="battle-row__arrow"
-                      onClick={() =>
-                        navigate(`/battle/${battle.id}`)
-                      }
+                      onClick={() => navigate("/map")}
                       aria-label={`Open battle against ${battle.opponent}`}
                     >
                       →
@@ -324,18 +393,18 @@ export default function HomePage() {
               <div className="section-heading section-heading--small">
 
                 <div>
-                  <span className="section-heading__eyebrow">
-                    THE REALM
-                  </span>
+                  <span className="section-heading__eyebrow">THE REALM</span>
 
-                  <h2>Campus Activity</h2>
+                  <h2>Recent Activity</h2>
                 </div>
 
               </div>
 
               <ul className="activity__list">
 
-                {feed.map((item) => (
+                {feed.length === 0 ? (
+                  <li className="activity__empty">No recent realm activity.</li>
+                ) : feed.map((item) => (
 
                   <li
                     className="activity__item"
@@ -549,14 +618,16 @@ export default function HomePage() {
           <div className="profile__identity">
 
             <span className="profile__faction">
-              {team.faction === "fire"
-                ? "FIRE FACTION"
-                : "WATER FACTION"}
+              {playerCity
+                ? team.faction === "fire"
+                  ? "FIRE FACTION"
+                  : "WATER FACTION"
+                : "UNCLAIMED"}
             </span>
 
             <h2>@{team.username}</h2>
 
-            <p>{mockPlayer.city.name}</p>
+            <p>{playerCity?.name ?? "No city claimed"}</p>
 
           </div>
 
@@ -628,6 +699,15 @@ export default function HomePage() {
                 </li>
 
               ))}
+
+              {history.length === 0 && (
+                <li className="history-item">
+                  <span className="history-item__marker" />
+                  <div>
+                    <p>No completed sprints yet.</p>
+                  </div>
+                </li>
+              )}
 
             </ul>
 
