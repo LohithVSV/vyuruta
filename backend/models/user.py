@@ -18,5 +18,6 @@ class User(Base):
     has_hosting_rights = Column(Boolean, nullable=False, default=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    city_xp_updated_at = Column(DateTime(timezone=True), nullable=True, server_default=func.now())
 
     city = relationship("City", back_populates="owner", uselist=False)

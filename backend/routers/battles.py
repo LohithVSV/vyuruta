@@ -1,21 +1,73 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
 from database import get_db
 from core.security import get_current_user
-from core.game_constants import TRIBUTE_PAYMENT_BY_DIFFICULTY, TRIBUTE_TAX_RATE_BY_DIFFICULTY
+from core.game_constants import TRIBUTE_PAYMENT_BY_DIFFICULTY
 from models.user import User
 from models.city import City
 from models.battle import Battle
 from models.sprint import Sprint
 from models.tribute import Tribute
+from core.economy import (
+    as_utc,
+    create_temporary_tribute,
+    utc_now,
+)
 from schemas.activity import RecentBattleActivity
 from schemas.battle import BattleCreate, BattleResponse
 from schemas.tribute import TributeChoice
 from routers.problems import pick_random_problem
+from routers.sprints import _resolve_no_show
 
 router = APIRouter(prefix="/battles", tags=["battles"])
+NO_SHOW_GRACE = timedelta(minutes=1)
+
+
+def _settle_no_show_if_due(battle: Battle, db: Session, now=None) -> bool:
+    if battle.status != "accepted" or battle.match_started_at is not None:
+        return False
+
+    challenger_joined = battle.challenger_joined_at is not None
+    opponent_joined = battle.opponent_joined_at is not None
+    if challenger_joined == opponent_joined:
+        return False
+
+    current_time = as_utc(now or utc_now())
+    deadline = as_utc(battle.proposed_time) + NO_SHOW_GRACE
+    if current_time < deadline:
+        return False
+
+    sprint = (
+        db.query(Sprint)
+        .filter(Sprint.battle_id == battle.id)
+        .with_for_update()
+        .first()
+    )
+    if sprint is None or sprint.status == "finished":
+        return False
+
+    claimed = (
+        db.query(Battle)
+        .filter(
+            Battle.id == battle.id,
+            Battle.status == "accepted",
+            Battle.match_started_at.is_(None),
+        )
+        .update({Battle.status: "forfeit_resolved"}, synchronize_session=False)
+    )
+    if claimed != 1:
+        db.refresh(battle)
+        return False
+    battle.status = "forfeit_resolved"
+
+    winner_id = battle.challenger_id if challenger_joined else battle.opponent_id
+    loser_id = battle.opponent_id if challenger_joined else battle.challenger_id
+    _resolve_no_show(battle, sprint, winner_id, loser_id, db, current_time)
+    return True
 
 
 @router.post("", response_model=BattleResponse)
@@ -55,6 +107,7 @@ def get_my_battles(
 ):
     battles = (
         db.query(Battle)
+        .with_for_update()
         .filter(
             or_(
                 Battle.challenger_id == current_user.id,
@@ -64,6 +117,13 @@ def get_my_battles(
         .order_by(Battle.created_at.desc())
         .all()
     )
+    settled_any = False
+    for battle in battles:
+        settled_any = _settle_no_show_if_due(battle, db) or settled_any
+    if settled_any:
+        db.commit()
+        for battle in battles:
+            db.refresh(battle)
     return battles
 
 
@@ -100,7 +160,12 @@ def accept_battle(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    battle = db.query(Battle).filter(Battle.id == battle_id).first()
+    battle = (
+        db.query(Battle)
+        .filter(Battle.id == battle_id)
+        .with_for_update()
+        .first()
+    )
     if not battle:
         raise HTTPException(status_code=404, detail="Battle not found")
 
@@ -125,6 +190,53 @@ def accept_battle(
     db.commit()
 
     return battle
+
+
+@router.post("/{battle_id}/join", response_model=BattleResponse)
+def join_battle(
+    battle_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    battle = (
+        db.query(Battle)
+        .filter(Battle.id == battle_id)
+        .with_for_update()
+        .first()
+    )
+    if not battle:
+        raise HTTPException(status_code=404, detail="Battle not found")
+    if current_user.id not in (battle.challenger_id, battle.opponent_id):
+        raise HTTPException(status_code=403, detail="You're not part of this battle")
+
+    if battle.status == "accepted":
+        if _settle_no_show_if_due(battle, db):
+            db.commit()
+            db.refresh(battle)
+            return battle
+        if battle.status != "accepted":
+            return battle
+
+        now = utc_now()
+        if current_user.id == battle.challenger_id and battle.challenger_joined_at is None:
+            battle.challenger_joined_at = now
+        elif current_user.id == battle.opponent_id and battle.opponent_joined_at is None:
+            battle.opponent_joined_at = now
+
+        if battle.challenger_joined_at and battle.opponent_joined_at:
+            battle.match_started_at = now
+        elif _settle_no_show_if_due(battle, db, now):
+            db.commit()
+            db.refresh(battle)
+            return battle
+
+        db.commit()
+        db.refresh(battle)
+        return battle
+
+    if battle.status in ("resolved", "awaiting_tribute", "forfeit_resolved"):
+        return battle
+    raise HTTPException(status_code=400, detail=f"Battle is already {battle.status}")
 
 
 @router.post("/{battle_id}/reject", response_model=BattleResponse)
@@ -156,7 +268,12 @@ def resolve_tribute(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    battle = db.query(Battle).filter(Battle.id == battle_id).first()
+    battle = (
+        db.query(Battle)
+        .filter(Battle.id == battle_id)
+        .with_for_update()
+        .first()
+    )
     if not battle:
         raise HTTPException(status_code=404, detail="Battle not found")
 
@@ -179,14 +296,25 @@ def resolve_tribute(
         if loser.currency < payment_amount:
             raise HTTPException(
                 status_code=400,
-                detail=f"Not enough currency to pay tribute ({payment_amount} needed) — choose the tax option instead",
+                detail=f"Not enough treasure to pay tribute ({payment_amount} needed) — choose the tax option instead",
             )
         loser.currency -= payment_amount
         winner.currency += payment_amount
+        battle.tribute_choice = "pay"
+        existing_debt = (
+            db.query(Tribute)
+            .filter(
+                Tribute.debtor_id == loser.id,
+                Tribute.creditor_id == winner.id,
+                Tribute.active.is_(True),
+            )
+            .first()
+        )
+        if existing_debt:
+            existing_debt.active = False
     else:  # "tax" — ongoing tax on the loser's future XP earnings
-        rate = TRIBUTE_TAX_RATE_BY_DIFFICULTY[battle.difficulty]
-        new_debt = Tribute(debtor_id=loser.id, creditor_id=winner.id, tax_rate_percent=rate, active=True)
-        db.add(new_debt)
+        create_temporary_tribute(loser, winner, db)
+        battle.tribute_choice = "tax"
 
     battle.status = "resolved"
     db.commit()

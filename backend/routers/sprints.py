@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from core.security import get_current_user
-from core.game_constants import WIN_REWARDS, TRIBUTE_TAX_RATE_BY_DIFFICULTY
+from core.game_constants import WIN_REWARDS
+from core.economy import as_utc, create_temporary_tribute, utc_now
 from models.user import User
 from models.battle import Battle
 from models.sprint import Sprint
@@ -40,17 +41,28 @@ def _pay_rewards(winner: User, difficulty: int, db: Session):
     winner.currency += currency_reward
 
     remaining_xp = xp_reward
+    now = utc_now()
     debts = (
         db.query(Tribute)
         .filter(Tribute.debtor_id == winner.id, Tribute.active == True)  # noqa: E712
         .all()
     )
     for debt in debts:
-        tax_amount = max(1, (xp_reward * debt.tax_rate_percent) // 100)
+        if debt.expires_at is None or as_utc(debt.expires_at) <= now:
+            debt.active = False
+            continue
+        tax_amount = (xp_reward * debt.tax_rate_percent) // 100
         tax_amount = min(tax_amount, remaining_xp)
         creditor = db.query(User).filter(User.id == debt.creditor_id).first()
         if creditor:
             creditor.xp += tax_amount
+            if tax_amount:
+                db.add(RewardLog(
+                    user_id=creditor.id,
+                    currency_amount=0,
+                    xp_amount=tax_amount,
+                    source="tribute",
+                ))
         remaining_xp -= tax_amount
 
     winner.xp += remaining_xp
@@ -63,41 +75,37 @@ def _pay_rewards(winner: User, difficulty: int, db: Session):
     ))
 
 
-def _resolve_tribute(battle: Battle, winner_id: int, loser_id: int, db: Session):
-    """
-    Runs after a sprint has a confirmed winner. Checks whether this win
-    clears an existing debt (rematch win), escalates an existing debt
-    (repeat loss), or opens a fresh pay-vs-tax choice (first-time loss).
-    Sets battle.status accordingly. Caller is responsible for db.commit().
-    """
-    cleared_debt = (
-        db.query(Tribute)
-        .filter(
-            Tribute.debtor_id == winner_id,
-            Tribute.creditor_id == loser_id,
-            Tribute.active == True,  # noqa: E712
-        )
-        .first()
-    )
-    if cleared_debt:
-        cleared_debt.active = False
-        battle.status = "resolved"
-        return
+def _resolve_tribute(battle: Battle):
+    battle.status = "awaiting_tribute"
 
-    existing_debt = (
-        db.query(Tribute)
-        .filter(
-            Tribute.debtor_id == loser_id,
-            Tribute.creditor_id == winner_id,
-            Tribute.active == True,  # noqa: E712
-        )
-        .first()
-    )
-    if existing_debt:
-        existing_debt.tax_rate_percent += TRIBUTE_TAX_RATE_BY_DIFFICULTY[battle.difficulty]
-        battle.status = "resolved"
-    else:
-        battle.status = "awaiting_tribute"
+
+def _record_battle_result(winner: User, loser: User) -> None:
+    winner.win_streak += 1
+    loser.win_streak = 0
+
+
+def _resolve_no_show(
+    battle: Battle,
+    sprint: Sprint,
+    winner_id: int,
+    loser_id: int,
+    db: Session,
+    now=None,
+):
+    current_time = now or utc_now()
+    winner = db.query(User).filter(User.id == winner_id).first()
+    loser = db.query(User).filter(User.id == loser_id).first()
+    if winner is None or loser is None:
+        raise HTTPException(status_code=404, detail="Battle participant not found")
+
+    sprint.status = "finished"
+    sprint.winner_id = winner_id
+    sprint.claimed_winner_id = winner_id
+    battle.status = "forfeit_resolved"
+    battle.tribute_choice = "tax"
+    _record_battle_result(winner, loser)
+    _pay_rewards(winner, battle.difficulty, db)
+    create_temporary_tribute(loser, winner, db, current_time)
 
 
 @router.get("/mine", response_model=list[SprintResponse])
@@ -144,7 +152,14 @@ def confirm_win(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    sprint = _get_sprint_or_404(sprint_id, db)
+    sprint = (
+        db.query(Sprint)
+        .filter(Sprint.id == sprint_id)
+        .with_for_update()
+        .first()
+    )
+    if not sprint:
+        raise HTTPException(status_code=404, detail="Sprint not found")
     battle = db.query(Battle).filter(Battle.id == sprint.battle_id).first()
     _require_participant(sprint, battle, current_user)
 
@@ -160,11 +175,14 @@ def confirm_win(
     db.refresh(sprint)
 
     winner_id = sprint.winner_id
-    loser_id = battle.opponent_id if winner_id == battle.challenger_id else battle.challenger_id
-
     winner = db.query(User).filter(User.id == winner_id).first()
+    loser_id = battle.opponent_id if winner_id == battle.challenger_id else battle.challenger_id
+    loser = db.query(User).filter(User.id == loser_id).first()
+    if winner is None or loser is None:
+        raise HTTPException(status_code=404, detail="Battle participant not found")
+    _record_battle_result(winner, loser)
     _pay_rewards(winner, battle.difficulty, db)
-    _resolve_tribute(battle, winner_id, loser_id, db)
+    _resolve_tribute(battle)
 
     db.commit()
     db.refresh(sprint)

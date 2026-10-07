@@ -15,7 +15,7 @@ export default function ProfilePanel({ player, history, feed }) {
       </section>
 
       <section className="stats-grid">
-        <Stat label="Currency" value={`🪙 ${player.currency}`} />
+        <Stat label="Treasure" value={`◈ ${player.currency}`} />
         <Stat label="Wins" value={player.wins} />
         <Stat label="Losses" value={player.losses} />
         <Stat label="Streak" value={`🔥 ${player.streak}`} />

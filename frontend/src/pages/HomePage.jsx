@@ -12,8 +12,8 @@ import { api, clearToken, getToken } from "../api";
 import "./HomePage.css";
 
 const BATTLE_STATUS_LABEL = {
-  pending: "Awaiting your response",
-  accepted: "Battle in progress",
+  pending: "Battle request pending",
+  accepted: "Ready to enter",
   awaiting_tribute: "Tribute decision pending",
 };
 
@@ -32,6 +32,7 @@ export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
   const [dashboard, setDashboard] = useState(null);
   const [loadError, setLoadError] = useState("");
+  const [refreshError, setRefreshError] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [leaderboardError, setLeaderboardError] = useState(false);
@@ -84,6 +85,43 @@ export default function HomePage() {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    if (!getToken()) return undefined;
+
+    let cancelled = false;
+    let refreshing = false;
+    const refreshBattles = async () => {
+      if (refreshing || document.visibilityState === "hidden") return;
+      refreshing = true;
+      try {
+        const [user, battles, sprints] = await Promise.all([
+          api.me(),
+          api.myBattles(),
+          api.mySprints(),
+        ]);
+        if (cancelled) return;
+        setDashboard((current) =>
+          current ? { ...current, user, battles, sprints } : current,
+        );
+        setRefreshError("");
+      } catch (error) {
+        if (!cancelled) setRefreshError(error.message);
+      } finally {
+        refreshing = false;
+      }
+    };
+
+    const interval = window.setInterval(refreshBattles, 2000);
+    window.addEventListener("focus", refreshBattles);
+    document.addEventListener("visibilitychange", refreshBattles);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshBattles);
+      document.removeEventListener("visibilitychange", refreshBattles);
+    };
+  }, []);
+
   const cityById = useMemo(
     () => new Map((dashboard?.cities ?? []).map((city) => [city.id, city])),
     [dashboard],
@@ -130,8 +168,8 @@ export default function HomePage() {
     username: user.username,
     faction: playerCity?.faction ?? "fire",
     citiesHeld: cities.filter((city) => city.owner_id === user.id).length,
-    wins: finishedSprints.filter((sprint) => sprint.winner_id === user.id).length,
-    losses: finishedSprints.filter((sprint) => sprint.winner_id !== user.id).length,
+    wins: user.wins,
+    losses: user.losses,
     streak: user.win_streak,
     currency: user.currency,
   };
@@ -139,11 +177,16 @@ export default function HomePage() {
   const battles = allBattles
     .filter((battle) => ["pending", "accepted", "awaiting_tribute"].includes(battle.status))
     .map((battle) => {
+      const isOutgoing = String(battle.challenger_id) === String(user.id);
       const opponentId =
-        battle.challenger_id === user.id ? battle.opponent_id : battle.challenger_id;
-      const city = cityById.get(battle.city_id);
+        isOutgoing ? battle.opponent_id : battle.challenger_id;
+      const city = isOutgoing
+        ? cityById.get(battle.city_id)
+        : cities.find((entry) => String(entry.owner_id) === String(opponentId));
       return {
         id: battle.id,
+        cityDbId: city?.id,
+        direction: isOutgoing ? "outgoing" : "incoming",
         opponent: ownerById.get(opponentId) ?? `Player ${opponentId}`,
         cityName: city?.name ?? "Unknown city",
         status: battle.status,
@@ -306,6 +349,12 @@ export default function HomePage() {
             </div>
 
 
+            {refreshError && (
+              <p className="battles__refresh-error" role="status">
+                Live battle updates are temporarily unavailable: {refreshError}
+              </p>
+            )}
+
             {battles.length === 0 ? (
 
               <div className="battles__empty">
@@ -314,13 +363,17 @@ export default function HomePage() {
                   ◇
                 </span>
 
-                <p>No active conflicts.</p>
+                <p>
+                  {allBattles.length > 0
+                    ? "No active conflicts right now."
+                    : "No active conflicts yet."}
+                </p>
 
                 <button
                   className="gold-button"
                   onClick={() => navigate("/map")}
                 >
-                  Propose your first battle
+                  {allBattles.length > 0 ? "Propose another battle" : "Propose your first battle"}
                 </button>
 
               </div>
@@ -355,13 +408,22 @@ export default function HomePage() {
                     </div>
 
                     <div className="battle-row__status">
-                      {BATTLE_STATUS_LABEL[battle.status] ??
-                        battle.status}
+                      {battle.status === "pending"
+                        ? battle.direction === "incoming"
+                          ? "Awaiting your response"
+                          : "Awaiting opponent"
+                        : BATTLE_STATUS_LABEL[battle.status] ?? battle.status}
                     </div>
 
                     <button
                       className="battle-row__arrow"
-                      onClick={() => navigate("/map")}
+                      onClick={() =>
+                        navigate(
+                          battle.status === "pending"
+                            ? `/map?panel=battles&city=${battle.cityDbId ?? ""}`
+                            : `/battle/${battle.id}`,
+                        )
+                      }
                       aria-label={`Open battle against ${battle.opponent}`}
                     >
                       →
@@ -637,7 +699,7 @@ export default function HomePage() {
           <div className="profile__currency">
 
             <div>
-              <span>RESONANCE</span>
+              <span>TREASURE</span>
               <strong>{team.currency}</strong>
             </div>
 

@@ -12,9 +12,9 @@ Campus DSA-battle strategy game. Solo build. Target: prove it on home campus (~3
 
 - **Map:** 300 cities, grouped by subject cluster, forest visual theme (unclaimed = overgrown, claimed = cleared + team banner).
 - **City assignment:** no unclaimed-zone conquest in v1. New team joining = auto-assigned one unclaimed city as their home. After that, ownership only changes via battle.
-- **Battle flow:** propose → accept/reject terms → accept/reject time slot (no counters). Any team member can accept/reject. 3 rejections between a pair = 48hr cooldown, resets after a confirmed battle.
-- **Conquest/tribute:** win a battle over an occupied city → loser picks (a) one-time 2000 currency payment, or (b) ongoing 1% passive-income tax until they win a rematch and reclaim the city.
-- **Currency:** earned via winning games + daily challenges.
+- **Battle flow:** propose → accept/reject → both players check in. The sprint unlocks when both are present (even before the scheduled time); if one player checks in and the other misses the scheduled time plus a one-minute grace period, the present player wins by forfeit.
+- **Conquest/tribute:** after a loss, choose a one-time currency payment or a temporary 1% XP tribute that expires after seven days. A no-show automatically incurs the 1% tribute for seven days.
+- **Economy:** new players start with 5,000 treasure; an owned city produces 100 XP per day.
 - **Game format v1:** DSA Sprint only (Debug Duel parked for post-pilot).
 - **Team profile:** name + banner, bio, member list, no lead role, unified event/history feed (claims/losses/wins/hosting) that doubles as the global activity feed.
 - **Weekly contest:** all teams compete together; winner gets 5% of campus-wide territory points for the week; 3-win streak → hosting rights (host sits out, curates from AI question pool).

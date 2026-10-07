@@ -69,9 +69,17 @@ export const api = {
   proposeBattle: (city_id, proposed_time, difficulty) =>
     apiFetch("/battles", { method: "POST", body: { city_id, proposed_time, difficulty } }),
   acceptBattle: (id) => apiFetch(`/battles/${id}/accept`, { method: "POST" }),
+  joinBattle: (id) => apiFetch(`/battles/${id}/join`, { method: "POST" }),
   rejectBattle: (id) => apiFetch(`/battles/${id}/reject`, { method: "POST" }),
 
   mySprints: () => apiFetch("/sprints/mine"),
+  problem: (id) => apiFetch(`/problems/${id}`),
+  runSprint: (id, code) =>
+    apiFetch(`/sprints/${id}/run`, { method: "POST", body: { code } }),
+  submitSprint: (id, code) =>
+    apiFetch(`/sprints/${id}/submit`, { method: "POST", body: { code } }),
+  chooseTribute: (battleId, choice) =>
+    apiFetch(`/battles/${battleId}/tribute`, { method: "POST", body: { choice } }),
 
   weeklyLeaderboard: (limit = 20) =>
     apiFetch(`/leaderboard/weekly?limit=${limit}`),

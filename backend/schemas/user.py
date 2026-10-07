@@ -14,6 +14,8 @@ class UserResponse(BaseModel):
     currency: int
     xp: int
     win_streak: int
+    wins: int = 0
+    losses: int = 0
     has_hosting_rights: bool
 
     class Config:

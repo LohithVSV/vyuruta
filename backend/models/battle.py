@@ -16,6 +16,10 @@ class Battle(Base):
     difficulty = Column(Integer, nullable=False, default=1)  # 1=easy 2=medium 3=hard, set by challenger
 
     proposed_time = Column(DateTime(timezone=True), nullable=False)
+    challenger_joined_at = Column(DateTime(timezone=True), nullable=True)
+    opponent_joined_at = Column(DateTime(timezone=True), nullable=True)
+    match_started_at = Column(DateTime(timezone=True), nullable=True)
+    tribute_choice = Column(String, nullable=True)
     status = Column(String, nullable=False, default="pending")  # pending | accepted | rejected | awaiting_tribute | resolved
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())

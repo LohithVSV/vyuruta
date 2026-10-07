@@ -322,7 +322,7 @@
 .map-search {
   position: absolute;
   z-index: 500;
-  top: 16px;
+  top: 76px;
   left: 16px;
   display: flex;
   width: min(360px, calc(100% - 88px));
@@ -333,6 +333,56 @@
   background: rgba(3, 15, 27, 0.92);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(10px);
+}
+
+.map-header {
+  position: absolute;
+  z-index: 510;
+  top: 14px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.map-brand,
+.map-home-button {
+  pointer-events: auto;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 7px;
+  background: rgba(3, 15, 27, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+.map-brand {
+  width: 138px;
+  height: 42px;
+  padding: 6px 10px;
+}
+
+.map-brand img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.map-home-button {
+  min-height: 40px;
+  padding: 0 13px;
+  color: #f4c18f;
+  font: 600 12px Arial, sans-serif;
+}
+
+.map-home-button:hover,
+.map-brand:hover {
+  border-color: rgba(255, 192, 131, 0.55);
+  background: rgba(17, 35, 49, 0.96);
 }
 
 .map-search input {
@@ -525,6 +575,42 @@
   filter: drop-shadow(0 0 5px rgba(255, 211, 77, 0.95));
 }
 
+.city-pin.pin-home {
+  z-index: 7;
+}
+
+.city-pin.pin-home::before {
+  position: absolute;
+  inset: -13px;
+  border-radius: 999px;
+  background: radial-gradient(circle, var(--home-aura-soft), transparent 72%);
+  box-shadow: 0 0 18px var(--home-aura), 0 0 34px var(--home-aura);
+  content: "";
+  animation: city-aura 1.25s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.city-pin.pin-home::after {
+  position: absolute;
+  inset: -8px;
+  border: 2px solid var(--home-aura);
+  border-radius: 999px;
+  box-shadow: 0 0 12px var(--home-aura);
+  content: "";
+  animation: city-ring 1.25s ease-out infinite;
+  pointer-events: none;
+}
+
+.city-pin.pin-home-fire {
+  --home-aura: rgba(255, 121, 55, 0.94);
+  --home-aura-soft: rgba(255, 148, 66, 0.38);
+}
+
+.city-pin.pin-home-water {
+  --home-aura: rgba(76, 210, 255, 0.94);
+  --home-aura-soft: rgba(92, 220, 255, 0.38);
+}
+
 .pin-owned img {
   filter: drop-shadow(0 0 4px rgba(255, 112, 102, 0.9));
 }
@@ -605,7 +691,7 @@
 .map-controls {
   position: absolute;
   right: 16px;
-  top: 16px;
+  top: 76px;
   z-index: 500;
   display: flex;
   flex-direction: column;
@@ -823,10 +909,27 @@
   }
 
   .map-search {
-    top: 10px;
+    top: 68px;
     left: 10px;
     height: 42px;
     width: min(320px, calc(100% - 72px));
+  }
+
+  .map-header {
+    top: 9px;
+    left: 10px;
+    right: 10px;
+  }
+
+  .map-brand {
+    width: 116px;
+    height: 36px;
+  }
+
+  .map-home-button {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 11px;
   }
 
   .map-search input {
@@ -836,7 +939,7 @@
 
   .map-controls {
     right: 10px;
-    top: 10px;
+    top: 68px;
   }
 
   .city-pin {

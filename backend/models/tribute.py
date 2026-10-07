@@ -5,9 +5,7 @@ from database import Base
 
 
 class Tribute(Base):
-    """A standing tax debt: debtor owes creditor tax_rate_percent% of every
-    currency reward the debtor earns, until the debtor beats the creditor in
-    a rematch (which clears it) or loses again (which escalates the rate)."""
+    """A temporary XP tribute owed by one player to another."""
 
     __tablename__ = "tributes"
     __table_args__ = (UniqueConstraint("debtor_id", "creditor_id", name="uq_tribute_pair"),)
@@ -19,6 +17,7 @@ class Tribute(Base):
 
     tax_rate_percent = Column(Integer, nullable=False, default=1)
     active = Column(Boolean, nullable=False, default=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

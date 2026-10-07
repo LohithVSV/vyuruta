@@ -6,8 +6,15 @@ from routers import auth, cities, battles
 from routers import problems
 from routers import leaderboard
 from routers import submissions
+from schema_migrations import initialize_database
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+def initialize_schema():
+    initialize_database()
+
 
 app.add_middleware(
     CORSMiddleware,

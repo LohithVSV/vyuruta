@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { territories } from "../data/cityData";
-import { DEFAULT_TERMS } from "../data/mockData";
+import { api } from "../api";
 import backgroundSea from "../assets/maps/background-sea.png";
 import fireCityMarker from "../assets/maps/markers/city-fire.png";
 import waterCityMarker from "../assets/maps/markers/city-water.png";
+import vyurutaLogo from "../assets/landing/logo.png";
 import "./TerritoryMap.css";
 
 const WORLD = 2400;
@@ -34,6 +36,20 @@ function buildCities(owners) {
   );
 }
 
+function citySelection(city, playerId) {
+  if (!city) return null;
+  return {
+    id: city.id,
+    name: city.name,
+    island: city.territory.name,
+    element: city.territory.element,
+    ownerId: city.owner?.ownerId ?? null,
+    ownerName: city.owner?.ownerName ?? null,
+    isMine: city.owner?.ownerId === playerId,
+    dbId: city.owner?.cityDbId ?? null,
+  };
+}
+
 function getTerritoryPosition(territory, isMobile) {
   if (!isMobile) return territory.position;
 
@@ -60,27 +76,50 @@ function clampView({ x, y, z }, vw, vh, minZoom) {
   };
 }
 
-function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
+function TerritoryMap({
+  player,
+  owners = {},
+  battles = [],
+  setBattles,
+  battleRefreshError = "",
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const OWNERS = owners;
   const CITIES = useMemo(() => buildCities(owners), [owners]);
   const homeTerritory =
     territories.find((territory) =>
       player.city?.id?.startsWith(`${territory.id}-`)
     ) ?? null;
+  const requestedCityId = new URLSearchParams(location.search).get("city");
+  const requestedCity = CITIES.find(
+    (city) => String(city.owner?.cityDbId) === requestedCityId,
+  ) ?? null;
+  const focusTerritoryOnOpen = requestedCity?.territory ?? homeTerritory;
   const homeCityMarker = player.city?.id?.startsWith("jala-") ? waterCityMarker : fireCityMarker;
   const rootRef = useRef(null);
   const overviewZoomRef = useRef(MIN_ZOOM);
   const [view, setView] = useState({ x: 0, y: 0, z: 0.8 });
   const viewRef = useRef(view);
   const [animating, setAnimating] = useState(false);
-  const [selectedCity, setSelectedCity] = useState(null);
-  const [selectedIsland, setSelectedIsland] = useState(homeTerritory);
+  const [manualSelectedCity, setSelectedCity] = useState(null);
+  const [selectedIsland, setSelectedIsland] = useState(
+    requestedCity?.territory ?? homeTerritory,
+  );
   const [citySearch, setCitySearch] = useState("");
-  const [panelMode, setPanelMode] = useState("profile");
-  const [battleQuestions, setBattleQuestions] = useState(DEFAULT_TERMS.questions);
-  const [battleMinutes, setBattleMinutes] = useState(DEFAULT_TERMS.minutes);
+  const [panelMode, setPanelMode] = useState(() =>
+    new URLSearchParams(location.search).get("panel") === "battles"
+      ? "battles"
+      : "profile",
+  );
+  const selectedCity =
+    panelMode === "battles" && requestedCity
+      ? citySelection(requestedCity, player.id)
+      : manualSelectedCity;
+  const [battleDifficulty, setBattleDifficulty] = useState(1);
   const [battleSlot, setBattleSlot] = useState("");
   const [battleError, setBattleError] = useState("");
+  const [sendingBattle, setSendingBattle] = useState(false);
 
   const pointers = useRef(new Map());
   const gesture = useRef({ mode: "none" });
@@ -268,7 +307,7 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
     setAnimating(true);
     apply(next);
     setTimeout(() => setAnimating(false), 400);
-  }, [apply]);
+  }, [apply, setAnimating]);
 
   const focusIsland = useCallback((t, zoom = 1.3) => {
     const { vw, vh } = size();
@@ -312,29 +351,28 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
     smoothApply({ z, x: vw / 2 - worldX * z, y: centerY - worldY * z });
   }, [smoothApply]);
 
-  /* Fit the realm, then bring the player's home island into focus. */
+  /* Wait for the map viewport layout before centering the relevant island. */
   useEffect(() => {
-    fitOverview();
-    let focusFrame;
-    if (homeTerritory) {
-      focusFrame = window.requestAnimationFrame(() =>
-        focusIsland(homeTerritory, HOME_CITY_ZOOM)
-      );
-    }
-    const onResize = () => {
+    let firstFrame;
+    let secondFrame;
+    const positionMap = () => {
       fitOverview();
-      if (homeTerritory) {
-        window.requestAnimationFrame(() =>
-          focusIsland(homeTerritory, HOME_CITY_ZOOM)
-        );
-      }
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          if (focusTerritoryOnOpen) {
+            focusIsland(focusTerritoryOnOpen, HOME_CITY_ZOOM);
+          }
+        });
+      });
     };
-    window.addEventListener("resize", onResize);
+    positionMap();
+    window.addEventListener("resize", positionMap);
     return () => {
-      window.removeEventListener("resize", onResize);
-      if (focusFrame) window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener("resize", positionMap);
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
     };
-  }, [fitOverview, focusIsland, homeTerritory]);
+  }, [fitOverview, focusIsland, focusTerritoryOnOpen]);
 
   /* ---------- selection ---------- */
   const selectCity = (t, index) => {
@@ -353,7 +391,7 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
       isMine: owner?.ownerId === player.id,
       dbId: owner?.cityDbId || null,
     });
-    setPanelMode("profile");
+    setPanelMode("city");
   };
 
   const searchCity = (query) => {
@@ -369,40 +407,54 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
     focusCity(city, MAX_ZOOM);
   };
 
-  const sendBattleRequest = (event) => {
+  const sendBattleRequest = async (event) => {
     event.preventDefault();
-    if (!selectedCity || !battleSlot.trim()) {
-      setBattleError("Add a proposed time to continue.");
+    if (!selectedCity?.dbId || !battleSlot) {
+      setBattleError("Choose a proposed date and time to continue.");
       return;
     }
-    setBattles?.((current) => [
-      {
-        id: `b${Date.now()}`,
-        direction: "outgoing",
-        opponent: selectedCity.ownerName,
-        cityName: selectedCity.name,
-        status: "proposed",
-        terms: {
-          format: "DSA Sprint",
-          questions: Number(battleQuestions),
-          minutes: Number(battleMinutes),
-        },
-        slot: battleSlot.trim(),
-      },
-      ...current,
-    ]);
+    setSendingBattle(true);
     setBattleError("");
-    setPanelMode("sent");
+    try {
+      const battle = await api.proposeBattle(
+        selectedCity.dbId,
+        new Date(battleSlot).toISOString(),
+        Number(battleDifficulty),
+      );
+      setBattles?.((current) => [
+        {
+          ...battle,
+          direction: "outgoing",
+          opponent: selectedCity.ownerName,
+          cityName: selectedCity.name,
+        },
+        ...current,
+      ]);
+      setPanelMode("sent");
+    } catch (error) {
+      setBattleError(error.message);
+    } finally {
+      setSendingBattle(false);
+    }
   };
 
-  const updateBattle = (id, status) => {
-    setBattles?.((current) => current.map((battle) =>
-      battle.id === id ? { ...battle, status } : battle
-    ));
+  const updateBattle = async (id, status) => {
+    setBattleError("");
+    try {
+      const updated =
+        status === "accepted"
+          ? await api.acceptBattle(id)
+          : await api.rejectBattle(id);
+      setBattles?.((current) => current.map((battle) =>
+        battle.id === id ? { ...battle, ...updated } : battle
+      ));
+    } catch (error) {
+      setBattleError(error.message);
+    }
   };
 
   const pendingBattleCount = battles.filter((battle) =>
-    battle.direction === "incoming" && ["proposed", "terms_accepted"].includes(battle.status)
+    battle.direction === "incoming" && battle.status === "pending"
   ).length;
 
   const stop = (e) => e.stopPropagation();
@@ -428,6 +480,23 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
           setPanelMode("profile");
         }}
       >
+      <div className="map-header" onPointerDown={stop} onClick={stop}>
+        <button
+          className="map-brand"
+          type="button"
+          onClick={() => navigate("/home")}
+          aria-label="Return to Vyuruta home"
+        >
+          <img src={vyurutaLogo} alt="Vyuruta" />
+        </button>
+        <button
+          className="map-home-button"
+          type="button"
+          onClick={() => navigate("/home")}
+        >
+          ← Return to home
+        </button>
+      </div>
       <form
         className="map-search"
         onPointerDown={stop}
@@ -524,6 +593,8 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
                 <button
                   key={id}
                   className={`city-pin ${cls} ${
+                    player.city?.id === id ? `pin-home pin-home-${t.element}` : ""
+                  } ${
                     activeCityId === id ? `pin-selected pin-selected-${t.element}` : ""
                   }`}
                   ref={(element) => {
@@ -588,7 +659,7 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
               </div>
             </div>
             <div className="sidebar-stats">
-              <div><span>COINS</span><strong>{player.currency.toLocaleString()}</strong></div>
+              <div><span>TREASURE</span><strong>{player.currency.toLocaleString()}</strong></div>
               <div><span>WINS</span><strong>{player.wins}</strong></div>
               <div><span>LOSSES</span><strong>{player.losses}</strong></div>
               <div><span>STREAK</span><strong>{player.streak}</strong></div>
@@ -632,28 +703,25 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
             <h1>Challenge {selectedCity.ownerName}</h1>
             <p className="sidebar-subtitle">For {selectedCity.name}</p>
             <label className="sidebar-field">
-              Questions
-              <select value={battleQuestions} onChange={(event) => setBattleQuestions(event.target.value)}>
-                {[1, 2, 3, 4, 5].map((count) => <option key={count} value={count}>{count} questions</option>)}
-              </select>
-            </label>
-            <label className="sidebar-field">
-              Time limit
-              <select value={battleMinutes} onChange={(event) => setBattleMinutes(event.target.value)}>
-                {[15, 30, 45, 60, 90].map((minutes) => <option key={minutes} value={minutes}>{minutes} minutes</option>)}
+              Difficulty
+              <select value={battleDifficulty} onChange={(event) => setBattleDifficulty(event.target.value)}>
+                <option value="1">Easy</option>
+                <option value="2">Medium</option>
+                <option value="3">Hard</option>
               </select>
             </label>
             <label className="sidebar-field">
               Proposed time
               <input
-                type="text"
-                placeholder="e.g. Sat, 6:00 PM"
+                type="datetime-local"
                 value={battleSlot}
                 onChange={(event) => setBattleSlot(event.target.value)}
               />
             </label>
             {battleError && <p className="battle-error">{battleError}</p>}
-            <button className="sidebar-primary" type="submit">Send challenge</button>
+            <button className="sidebar-primary" type="submit" disabled={sendingBattle}>
+              {sendingBattle ? "Sending request..." : "Send challenge"}
+            </button>
           </form>
         )}
 
@@ -674,6 +742,12 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
           <section className="sidebar-content sidebar-battles">
             <p className="sidebar-eyebrow">ARENA</p>
             <h1>Battle requests</h1>
+            {battleRefreshError && (
+              <p className="battle-error" role="status">
+                Live updates are unavailable: {battleRefreshError}
+              </p>
+            )}
+            {battleError && <p className="battle-error" role="alert">{battleError}</p>}
             {battles.length === 0 && <p className="sidebar-copy">No battles yet.</p>}
             {battles.map((battle) => (
               <article className="sidebar-battle" key={battle.id}>
@@ -681,18 +755,17 @@ function TerritoryMap({ player, owners = {}, battles = [], setBattles }) {
                   <strong>{battle.direction === "incoming" ? `${battle.opponent} challenges you` : `You challenged ${battle.opponent}`}</strong>
                   <span>{battle.status.replace("_", " ")}</span>
                 </div>
-                <p>{battle.cityName} · {battle.terms.questions} questions · {battle.terms.minutes} min</p>
-                <p className="battle-slot">{battle.slot}</p>
-                {battle.direction === "incoming" && battle.status === "proposed" && (
+                <p>{battle.cityName} · {["", "Easy", "Medium", "Hard"][battle.difficulty] ?? "Challenge"}</p>
+                <p className="battle-slot">{new Date(battle.proposed_time).toLocaleString()}</p>
+                {battle.direction === "incoming" && battle.status === "pending" && (
                   <div className="sidebar-battle-actions">
-                    <button onClick={() => updateBattle(battle.id, "terms_accepted")}>Accept terms</button>
+                    <button onClick={() => updateBattle(battle.id, "accepted")}>Accept battle</button>
                     <button onClick={() => updateBattle(battle.id, "rejected")}>Reject</button>
                   </div>
                 )}
-                {battle.direction === "incoming" && battle.status === "terms_accepted" && (
+                {battle.status === "accepted" && (
                   <div className="sidebar-battle-actions">
-                    <button onClick={() => updateBattle(battle.id, "scheduled")}>Accept time</button>
-                    <button onClick={() => updateBattle(battle.id, "rejected")}>Reject</button>
+                    <button onClick={() => navigate(`/battle/${battle.id}`)}>Enter battle</button>
                   </div>
                 )}
               </article>

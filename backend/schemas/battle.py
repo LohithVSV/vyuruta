@@ -23,6 +23,10 @@ class BattleResponse(BaseModel):
     difficulty: int
     proposed_time: datetime
     status: str
+    challenger_joined_at: datetime | None = None
+    opponent_joined_at: datetime | None = None
+    match_started_at: datetime | None = None
+    tribute_choice: str | None = None
     created_at: datetime
 
     class Config:
