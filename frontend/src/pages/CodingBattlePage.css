@@ -476,6 +476,33 @@
   font-size: 10px;
 }
 
+.coding-room__toolbar-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-right: 18px;
+}
+
+.coding-room__match-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #d8c5a6;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.coding-room__match-timer strong {
+  color: #f3eadb;
+  font: 600 16px "Spectral", Georgia, serif;
+  letter-spacing: 0;
+}
+
+.coding-room__match-timer--urgent,
+.coding-room__match-timer--urgent strong {
+  color: #ff947e;
+}
+
 .coding-room__lobby {
   min-height: 0;
   flex: 1;
@@ -756,6 +783,10 @@
   border-color: rgba(108, 171, 197, 0.34);
 }
 
+.coding-room__outcome--draw {
+  border-color: rgba(211, 192, 151, 0.38);
+}
+
 .coding-room__outcome-sigil {
   width: 48px;
   height: 48px;
@@ -773,6 +804,12 @@
   border-color: rgba(107, 181, 210, 0.36);
   color: #9dd9ed;
   background: rgba(56, 129, 161, 0.16);
+}
+
+.coding-room__outcome--draw .coding-room__outcome-sigil {
+  border-color: rgba(211, 192, 151, 0.38);
+  color: #ead7ac;
+  background: rgba(176, 148, 91, 0.16);
 }
 
 .coding-room__outcome h2 {
@@ -832,11 +869,6 @@
 .coding-room__tribute-choice--pay {
   border-color: rgba(234, 151, 72, 0.35);
   background: linear-gradient(145deg, rgba(162, 82, 36, 0.23), rgba(255, 255, 255, 0.035));
-}
-
-.coding-room__tribute-choice--tax {
-  border-color: rgba(103, 173, 201, 0.32);
-  background: linear-gradient(145deg, rgba(43, 114, 145, 0.2), rgba(255, 255, 255, 0.035));
 }
 
 .coding-room__tribute-choice > span {

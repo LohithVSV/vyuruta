@@ -1,6 +1,6 @@
 """
 Problem set for Academic Guild Wars. Run from backend/:  python seed_problems.py
-difficulty: 1 = easy, 2 = medium, 3 = hard
+difficulty: 1 = easy, 2 = medium, 3 = difficult (medium to medium-hard)
 All problems read from stdin and print to stdout (see each description).
 """
 from database import SessionLocal
@@ -11,7 +11,7 @@ PROBLEMS = [
     {
         "title": 'Pair Sum Indices',
         "slug": 'pair-sum-indices',
-        "difficulty": 1,
+        "difficulty": 2,
         "description": 'Two travelers want to split a bridge toll that exactly equals a target amount. Given a list of integers, find two different positions whose values add up to the target.\n\nInput:\nLine 1: n (count of numbers)\nLine 2: n space-separated integers\nLine 3: target\n\nOutput: the two indices i and j (i < j) separated by a space. Choose the smallest i, then the smallest j. A valid pair always exists.',
         "test_cases": [
             {"input_data": '4\n2 7 11 15\n9', "expected_output": '0 1', "is_sample": True},
@@ -175,7 +175,7 @@ PROBLEMS = [
     {
         "title": 'Fewest Coins',
         "slug": 'fewest-coins',
-        "difficulty": 2,
+        "difficulty": 3,
         "description": 'Given coin values (unlimited supply of each) and an amount, print the minimum number of coins needed to make exactly that amount, or -1 if it is impossible.\n\nInput:\nLine 1: amount\nLine 2: space-separated coin values\nOutput: the minimum count or -1.',
         "test_cases": [
             {"input_data": '11\n1 2 5', "expected_output": '3', "is_sample": True},
@@ -238,8 +238,13 @@ def seed():
     db = SessionLocal()
     try:
         for p in PROBLEMS:
-            if db.query(Problem).filter(Problem.slug == p["slug"]).first():
-                print(f"Skipping {p['slug']} (already exists)")
+            existing = db.query(Problem).filter(Problem.slug == p["slug"]).first()
+            if existing:
+                if existing.difficulty != p["difficulty"]:
+                    existing.difficulty = p["difficulty"]
+                    print(f"Updated {p['slug']} to difficulty {p['difficulty']}")
+                else:
+                    print(f"Skipping {p['slug']} (already exists)")
                 continue
             problem = Problem(
                 title=p["title"],

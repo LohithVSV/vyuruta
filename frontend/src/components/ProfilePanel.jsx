@@ -21,10 +21,6 @@ export default function ProfilePanel({ player, history, feed }) {
         <Stat label="Streak" value={`🔥 ${player.streak}`} />
       </section>
 
-      {player.taxMode === "tax" && (
-        <p className="notice">You are paying 1% tribute. Win a rematch to reclaim your city.</p>
-      )}
-
       <ActivityFeed items={history} title="Your history" />
       <ActivityFeed items={feed} title="Campus activity" />
     </div>

@@ -1053,7 +1053,7 @@
   white-space: nowrap;
 }
 
-.leaderboard__xp {
+.leaderboard__treasure {
   color: var(--water);
 
   font-size: 0.62rem;
@@ -1388,6 +1388,60 @@
   color: var(--water);
 
   font-size: 1.1rem;
+}
+
+.profile__daily-treasure {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile__daily-treasure > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile__daily-treasure strong {
+  color: var(--text);
+  font-size: 0.68rem;
+}
+
+.profile__daily-treasure span,
+.profile__daily-treasure p {
+  color: var(--muted);
+  font-size: 0.55rem;
+}
+
+.profile__daily-treasure p {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  color: #e89a83;
+}
+
+.profile__daily-treasure button {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(201, 162, 75, 0.45);
+  border-radius: 5px;
+  background: rgba(201, 162, 75, 0.12);
+  color: #e9cf91;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.profile__daily-treasure button:disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
+.profile__daily-treasure:has(p) {
+  flex-wrap: wrap;
 }
 
 
@@ -1765,7 +1819,7 @@
       auto;
   }
 
-  .leaderboard__xp {
+  .leaderboard__treasure {
     font-size: 0.56rem;
   }
 

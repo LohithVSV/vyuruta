@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import DateTime, String, inspect, text
+from sqlalchemy import DateTime, Integer, String, inspect, text
 
 from database import Base, engine
 
@@ -11,12 +11,16 @@ ADDITIONAL_COLUMNS = {
         "opponent_joined_at": DateTime(timezone=True),
         "match_started_at": DateTime(timezone=True),
         "tribute_choice": String(),
+        "tribute_amount": Integer(),
     },
     "tributes": {
         "expires_at": DateTime(timezone=True),
     },
     "users": {
         "city_xp_updated_at": DateTime(timezone=True),
+    },
+    "reward_logs": {
+        "related_user_id": Integer(),
     },
 }
 
@@ -38,30 +42,42 @@ def initialize_database() -> None:
             "CREATE TABLE IF NOT EXISTS app_migrations "
             "(version INTEGER PRIMARY KEY)"
         ))
-        migrated = connection.execute(text(
+        version_one = connection.execute(text(
             "SELECT version FROM app_migrations WHERE version = 1"
         )).first()
-        if migrated:
-            return
+        if not version_one:
+            now = datetime.now(timezone.utc)
+            connection.execute(text(
+                "UPDATE users SET currency = 5000 WHERE currency = 0"
+            ))
+            connection.execute(
+                text(
+                    "UPDATE users SET city_xp_updated_at = :now "
+                    "WHERE city_xp_updated_at IS NULL"
+                ),
+                {"now": now},
+            )
+            connection.execute(
+                text(
+                    "UPDATE tributes SET expires_at = :expires_at "
+                    "WHERE active = TRUE AND expires_at IS NULL"
+                ),
+                {"expires_at": now + timedelta(days=7)},
+            )
+            connection.execute(text(
+                "INSERT INTO app_migrations (version) VALUES (1)"
+            ))
 
-        now = datetime.now(timezone.utc)
-        connection.execute(text(
-            "UPDATE users SET currency = 5000 WHERE currency = 0"
-        ))
-        connection.execute(
-            text(
-                "UPDATE users SET city_xp_updated_at = :now "
-                "WHERE city_xp_updated_at IS NULL"
-            ),
-            {"now": now},
-        )
-        connection.execute(
-            text(
-                "UPDATE tributes SET expires_at = :expires_at "
-                "WHERE active = TRUE AND expires_at IS NULL"
-            ),
-            {"expires_at": now + timedelta(days=7)},
-        )
-        connection.execute(text(
-            "INSERT INTO app_migrations (version) VALUES (1)"
-        ))
+        version_two = connection.execute(text(
+            "SELECT version FROM app_migrations WHERE version = 2"
+        )).first()
+        if not version_two:
+            connection.execute(text(
+                "UPDATE users SET currency = 20000"
+            ))
+            connection.execute(text(
+                "UPDATE tributes SET active = FALSE WHERE active = TRUE"
+            ))
+            connection.execute(text(
+                "INSERT INTO app_migrations (version) VALUES (2)"
+            ))

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import and_, func
 from datetime import datetime, timedelta, timezone
 
 from database import get_db
@@ -21,18 +21,31 @@ def weekly_leaderboard(
     limit: int = Query(20, le=100),
     db: Session = Depends(get_db),
 ):
-    """Top XP earners since the start of this week (Monday 00:00 UTC)."""
+    """Rank players by net treasure earned this week (Monday 00:00 UTC)."""
     since = _start_of_this_week()
+    weekly_treasure = func.coalesce(func.sum(RewardLog.currency_amount), 0)
     rows = (
-        db.query(User.id, User.username, func.coalesce(func.sum(RewardLog.xp_amount), 0).label("xp"))
-        .join(RewardLog, RewardLog.user_id == User.id)
-        .filter(RewardLog.created_at >= since)
+        db.query(
+            User.id,
+            User.username,
+            weekly_treasure.label("treasure"),
+        )
+        .outerjoin(
+            RewardLog,
+            and_(
+                RewardLog.user_id == User.id,
+                RewardLog.created_at >= since,
+            ),
+        )
         .group_by(User.id, User.username)
-        .order_by(func.sum(RewardLog.xp_amount).desc())
+        .order_by(weekly_treasure.desc(), User.username)
         .limit(limit)
         .all()
     )
-    return [LeaderboardEntry(user_id=r.id, username=r.username, xp=r.xp) for r in rows]
+    return [
+        LeaderboardEntry(user_id=r.id, username=r.username, treasure=r.treasure)
+        for r in rows
+    ]
 
 
 @router.get("/season", response_model=list[LeaderboardEntry])
@@ -40,16 +53,13 @@ def season_leaderboard(
     limit: int = Query(20, le=100),
     db: Session = Depends(get_db),
 ):
-    """
-    Top XP earners for the season, read straight off User.xp (cumulative).
-    NOTE: this is not reset automatically — when a season ends you'll need
-    to run a one-off script to zero out User.xp for the next season. Parked
-    for now, same as passive growth.
-    """
     rows = (
-        db.query(User.id, User.username, User.xp)
-        .order_by(User.xp.desc())
+        db.query(User.id, User.username, User.currency)
+        .order_by(User.currency.desc(), User.username)
         .limit(limit)
         .all()
     )
-    return [LeaderboardEntry(user_id=r.id, username=r.username, xp=r.xp) for r in rows]
+    return [
+        LeaderboardEntry(user_id=r.id, username=r.username, treasure=r.currency)
+        for r in rows
+    ]

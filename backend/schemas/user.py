@@ -12,7 +12,6 @@ class UserResponse(BaseModel):
     username: str
     college_name: str
     currency: int
-    xp: int
     win_streak: int
     wins: int = 0
     losses: int = 0

@@ -14,16 +14,28 @@ const MIN_ZOOM = 0.05;
 const TAP_SLOP = 6;
 const HOME_CITY_ZOOM = 2.48;
 
-// Builds the list of all 100 map spots. `owners` maps a map id like "agni-1-3"
+function defaultCityName(territory, index) {
+  const realmTerritories = territories.filter(
+    (item) => item.element === territory.element,
+  );
+  const territoryIndex = realmTerritories.findIndex(
+    (item) => item.id === territory.id,
+  );
+  const number = realmTerritories
+    .slice(0, territoryIndex)
+    .reduce((total, item) => total + item.citySpots.length, 0) + index + 1;
+  const prefix = territory.element === "fire" ? "Agni" : "Jal";
+  return `${prefix}-${String(number).padStart(3, "0")}`;
+}
+
+// Builds the list of all 200 map spots. `owners` maps a map id like "agni-1-3"
 // to { ownerId, ownerName, cityName, cityDbId } (comes from the backend).
 function buildCities(owners) {
   return territories.flatMap((territory) =>
     territory.citySpots.map((_, index) => {
       const id = `${territory.id}-${index + 1}`;
       const owner = owners[id];
-      const name =
-        owner?.cityName ||
-        `${territory.name} Forest ${String(index + 1).padStart(2, "0")}`;
+      const name = owner?.cityName || defaultCityName(territory, index);
       return {
         id,
         territory,
@@ -107,6 +119,7 @@ function TerritoryMap({
     requestedCity?.territory ?? homeTerritory,
   );
   const [citySearch, setCitySearch] = useState("");
+  const [citySearchError, setCitySearchError] = useState("");
   const [panelMode, setPanelMode] = useState(() =>
     new URLSearchParams(location.search).get("panel") === "battles"
       ? "battles"
@@ -381,9 +394,7 @@ function TerritoryMap({
     setSelectedIsland(t);
     setSelectedCity({
       id,
-      name:
-        owner?.cityName ||
-        `${t.name} Forest ${String(index + 1).padStart(2, "0")}`,
+      name: owner?.cityName || defaultCityName(t, index),
       island: t.name,
       element: t.element,
       ownerId: owner?.ownerId || null,
@@ -401,10 +412,34 @@ function TerritoryMap({
       (item) => item.searchName.toLowerCase() === normalized || item.name.toLowerCase() === normalized
     );
     if (!city) return;
+    setCitySearchError("");
     setCitySearch(city.searchName);
     setSelectedIsland(city.territory);
     selectCity(city.territory, city.index);
     focusCity(city, MAX_ZOOM);
+  };
+
+  const findSearchedCity = (query) => {
+    const normalized = query.trim().toLowerCase();
+    const username = normalized.replace(/^@/, "");
+    if (!username) return null;
+
+    return (
+      CITIES.find((city) =>
+        city.owner?.ownerName?.toLowerCase() === username
+      ) ??
+      CITIES.find((city) =>
+        city.searchName.toLowerCase() === normalized ||
+        city.name.toLowerCase() === normalized
+      ) ??
+      CITIES.find((city) =>
+        city.searchName.toLowerCase().includes(normalized)
+      ) ??
+      CITIES.find((city) =>
+        city.owner?.ownerName?.toLowerCase().includes(username)
+      ) ??
+      null
+    );
   };
 
   const sendBattleRequest = async (event) => {
@@ -456,6 +491,12 @@ function TerritoryMap({
   const pendingBattleCount = battles.filter((battle) =>
     battle.direction === "incoming" && battle.status === "pending"
   ).length;
+  const activeBattles = battles.filter((battle) =>
+    ["pending", "accepted"].includes(battle.status)
+  );
+  const recentBattleHistory = battles
+    .filter((battle) => !["pending", "accepted"].includes(battle.status))
+    .slice(0, 10);
 
   const stop = (e) => e.stopPropagation();
   const activeCityId = selectedCity?.id;
@@ -503,37 +544,53 @@ function TerritoryMap({
         onClick={stop}
         onSubmit={(e) => {
           e.preventDefault();
-          const normalized = citySearch.trim().toLowerCase();
-          if (!normalized) return;
-          const match = CITIES.find((city) =>
-            city.searchName.toLowerCase().includes(normalized)
-          );
-          if (match) searchCity(match.searchName);
+          const match = findSearchedCity(citySearch);
+          if (match) {
+            searchCity(match.searchName);
+          } else if (citySearch.trim()) {
+            setCitySearchError("No city or player found for that search.");
+          }
         }}
       >
         <input
-          aria-label="Search cities"
+          aria-label="Search cities or usernames"
           autoComplete="off"
           list="map-city-options"
           onChange={(e) => {
             const value = e.target.value;
             setCitySearch(value);
+            setCitySearchError("");
+            const normalized = value.trim().toLowerCase();
+            const username = normalized.replace(/^@/, "");
             const exactMatch = CITIES.find(
-              (city) => city.searchName.toLowerCase() === value.trim().toLowerCase()
+              (city) =>
+                city.searchName.toLowerCase() === normalized ||
+                city.name.toLowerCase() === normalized ||
+                city.owner?.ownerName?.toLowerCase() === username
             );
             if (exactMatch) searchCity(exactMatch.searchName);
           }}
-          placeholder="Search cities..."
+          placeholder="Search cities or usernames..."
           type="search"
           value={citySearch}
         />
         <datalist id="map-city-options">
           {CITIES.map((city) => (
-            <option key={city.id} value={city.searchName} />
+            <option key={`city-${city.id}`} value={city.searchName} />
+          ))}
+          {CITIES.filter((city) => city.owner?.ownerName).map((city) => (
+            <option
+              key={`player-${city.id}`}
+              value={`@${city.owner.ownerName}`}
+              label={`${city.owner.ownerName} · ${city.name}`}
+            />
           ))}
         </datalist>
         <button type="submit">Find</button>
       </form>
+      {citySearchError && (
+        <p className="map-search-error" role="alert">{citySearchError}</p>
+      )}
 
       <div
         className="map-world"
@@ -602,8 +659,8 @@ function TerritoryMap({
                     else delete cityRefs.current[id];
                   }}
                   style={{ left: `${s.x}%`, top: `${s.y}%` }}
-                  aria-label={`${owner?.cityName || `${t.name} Forest ${String(i + 1).padStart(2, "0")}`} - ${t.name}`}
-                  title={`${owner?.cityName || `${t.name} Forest ${String(i + 1).padStart(2, "0")}`} - ${t.name}`}
+                  aria-label={`${owner?.cityName || defaultCityName(t, i)} - ${t.name}`}
+                  title={`${owner?.cityName || defaultCityName(t, i)} - ${t.name}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     selectCity(t, i);
@@ -707,7 +764,7 @@ function TerritoryMap({
               <select value={battleDifficulty} onChange={(event) => setBattleDifficulty(event.target.value)}>
                 <option value="1">Easy</option>
                 <option value="2">Medium</option>
-                <option value="3">Hard</option>
+                <option value="3">Difficult</option>
               </select>
             </label>
             <label className="sidebar-field">
@@ -748,14 +805,14 @@ function TerritoryMap({
               </p>
             )}
             {battleError && <p className="battle-error" role="alert">{battleError}</p>}
-            {battles.length === 0 && <p className="sidebar-copy">No battles yet.</p>}
-            {battles.map((battle) => (
+            {activeBattles.length === 0 && <p className="sidebar-copy">No active battle requests.</p>}
+            {activeBattles.map((battle) => (
               <article className="sidebar-battle" key={battle.id}>
                 <div className="sidebar-battle-title">
                   <strong>{battle.direction === "incoming" ? `${battle.opponent} challenges you` : `You challenged ${battle.opponent}`}</strong>
                   <span>{battle.status.replace("_", " ")}</span>
                 </div>
-                <p>{battle.cityName} · {["", "Easy", "Medium", "Hard"][battle.difficulty] ?? "Challenge"}</p>
+                <p>{battle.cityName} · {["", "Easy", "Medium", "Difficult"][battle.difficulty] ?? "Challenge"}</p>
                 <p className="battle-slot">{new Date(battle.proposed_time).toLocaleString()}</p>
                 {battle.direction === "incoming" && battle.status === "pending" && (
                   <div className="sidebar-battle-actions">
@@ -770,6 +827,22 @@ function TerritoryMap({
                 )}
               </article>
             ))}
+            {recentBattleHistory.length > 0 && (
+              <details className="sidebar-battle-history">
+                <summary>Recent battle history ({recentBattleHistory.length})</summary>
+                <p className="sidebar-copy">Showing your 10 most recent completed or closed battles.</p>
+                {recentBattleHistory.map((battle) => (
+                  <article className="sidebar-battle" key={battle.id}>
+                    <div className="sidebar-battle-title">
+                      <strong>Battle with {battle.opponent}</strong>
+                      <span>{battle.status.replaceAll("_", " ")}</span>
+                    </div>
+                    <p>{battle.cityName} · {["", "Easy", "Medium", "Difficult"][battle.difficulty] ?? "Challenge"}</p>
+                    <p className="battle-slot">{new Date(battle.proposed_time).toLocaleString()}</p>
+                  </article>
+                ))}
+              </details>
+            )}
           </section>
         )}
       </aside>

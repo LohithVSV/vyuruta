@@ -12,7 +12,8 @@ router = APIRouter(prefix="/cities", tags=["cities"])
 def _map_id(name: str):
     """
     'Agni-007' -> 'agni-1-7'   (island 1, spot 7 on the frontend map)
-    'Jal-014'  -> 'jala-2-4'
+    'Agni-021' -> 'agni-2-1'
+    'Jal-041'  -> 'jala-3-1'
     Returns None if the city has no spot on the map.
     """
     try:
@@ -20,10 +21,10 @@ def _map_id(name: str):
         n = int(num)
     except ValueError:
         return None
-    if n < 1 or n > 50 or cluster not in ("Agni", "Jal"):
+    if n < 1 or n > 100 or cluster not in ("Agni", "Jal"):
         return None
     prefix = "agni" if cluster == "Agni" else "jala"
-    return f"{prefix}-{(n - 1) // 10 + 1}-{(n - 1) % 10 + 1}"
+    return f"{prefix}-{(n - 1) // 20 + 1}-{(n - 1) % 20 + 1}"
 
 
 def _faction(cluster: str) -> str:

@@ -6,6 +6,7 @@ from routers import auth, cities, battles
 from routers import problems
 from routers import leaderboard
 from routers import submissions
+from routers import treasure
 from schema_migrations import initialize_database
 
 app = FastAPI()
@@ -36,6 +37,7 @@ app.include_router(sprints.router)
 app.include_router(problems.router)
 app.include_router(leaderboard.router)
 app.include_router(submissions.router)
+app.include_router(treasure.router)
 
 @app.get("/")
 def read_root():

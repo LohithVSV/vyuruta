@@ -20,7 +20,8 @@ class Battle(Base):
     opponent_joined_at = Column(DateTime(timezone=True), nullable=True)
     match_started_at = Column(DateTime(timezone=True), nullable=True)
     tribute_choice = Column(String, nullable=True)
-    status = Column(String, nullable=False, default="pending")  # pending | accepted | rejected | awaiting_tribute | resolved
+    tribute_amount = Column(Integer, nullable=True)
+    status = Column(String, nullable=False, default="pending")  # pending | accepted | rejected | resolved
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

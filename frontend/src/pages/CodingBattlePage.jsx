@@ -6,14 +6,8 @@ import vyurutaLogo from "../assets/landing/logo.png";
 import { api, getToken } from "../api";
 import "./CodingBattlePage.css";
 
-const TRIBUTE = {
-  1: { payment: 2000, tax: 1 },
-  2: { payment: 4000, tax: 1 },
-  3: { payment: 8000, tax: 1 },
-};
-
 function difficultyLabel(difficulty) {
-  return ["", "Easy", "Medium", "Hard"][difficulty] ?? "Challenge";
+  return ["", "Easy", "Medium", "Difficult"][difficulty] ?? "Challenge";
 }
 
 export default function CodingBattlePage() {
@@ -30,8 +24,6 @@ export default function CodingBattlePage() {
   const [failedSubmit, setFailedSubmit] = useState(null);
   const [running, setRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [tributeChoice, setTributeChoice] = useState("");
-  const [choosingTribute, setChoosingTribute] = useState(false);
   const [clockNow, setClockNow] = useState(0);
   const joinAttempt = useRef(null);
 
@@ -48,6 +40,7 @@ export default function CodingBattlePage() {
       throw new Error("This battle or its sprint could not be found.");
     }
     setRoom((current) => (current ? { ...current, battle, sprint } : current));
+    setClockNow(Date.now());
     setStatusError("");
     return { battle, sprint };
   }, [battleId]);
@@ -81,6 +74,7 @@ export default function CodingBattlePage() {
         }
         const problem = await api.problem(sprint.problem_id);
         if (!cancelled) {
+          setClockNow(Date.now());
           setRoom({ user, cities, battle, sprint, problem });
         }
       } catch (error) {
@@ -129,7 +123,9 @@ export default function CodingBattlePage() {
 
   const sprintStatus = room?.sprint.status;
   useEffect(() => {
-    if (!sprintStatus || sprintStatus === "finished") return undefined;
+    if (!sprintStatus || sprintStatus === "finished" || sprintStatus === "expired") {
+      return undefined;
+    }
     const interval = window.setInterval(() => setClockNow(Date.now()), 1000);
     return () => window.clearInterval(interval);
   }, [sprintStatus]);
@@ -138,7 +134,6 @@ export default function CodingBattlePage() {
   const sampleResults = runResult?.results.filter((result) => result.is_sample) ?? [];
   const hiddenResults = runResult?.results.filter((result) => !result.is_sample) ?? [];
   const lineCount = Math.max(1, code.split("\n").length);
-  const tribute = TRIBUTE[room?.battle.difficulty] ?? TRIBUTE[1];
   const currentPlayerJoined =
     room &&
     (String(room.battle.challenger_id) === String(room.user.id)
@@ -152,8 +147,15 @@ export default function CodingBattlePage() {
   const matchStarted = Boolean(room?.battle.match_started_at);
   const scheduledTime = room ? new Date(room.battle.proposed_time).getTime() : 0;
   const graceEndsAt = scheduledTime + 60_000;
-  const countdownSeconds = Math.max(0, Math.ceil((graceEndsAt - (clockNow || scheduledTime)) / 1000));
+  const matchEndsAt = room?.battle.match_started_at
+    ? new Date(room.battle.match_started_at).getTime() +
+      room.battle.duration_minutes * 60_000
+    : 0;
+  const countdownSeconds = matchStarted
+    ? Math.max(0, Math.ceil((matchEndsAt - (clockNow || matchEndsAt)) / 1000))
+    : Math.max(0, Math.ceil((graceEndsAt - (clockNow || scheduledTime)) / 1000));
   const countdownLabel = `${String(Math.floor(countdownSeconds / 60)).padStart(2, "0")}:${String(countdownSeconds % 60).padStart(2, "0")}`;
+  const timeExpired = matchStarted && countdownSeconds === 0;
 
   const opponent = useMemo(() => {
     if (!room) return null;
@@ -199,7 +201,7 @@ export default function CodingBattlePage() {
   };
 
   const handleRun = async () => {
-    if (!room || running || submitting || !matchStarted) return;
+    if (!room || running || submitting || !matchStarted || timeExpired) return;
     setRunning(true);
     setActionError("");
     setFailedSubmit(null);
@@ -216,7 +218,7 @@ export default function CodingBattlePage() {
   };
 
   const handleSubmit = async () => {
-    if (!room || running || submitting || !matchStarted) return;
+    if (!room || running || submitting || !matchStarted || timeExpired) return;
     setSubmitting(true);
     setActionError("");
     setFailedSubmit(null);
@@ -248,22 +250,6 @@ export default function CodingBattlePage() {
     }
   };
 
-  const handleTribute = async (choice) => {
-    if (!room || choosingTribute) return;
-    setChoosingTribute(true);
-    setTributeChoice(choice);
-    setActionError("");
-    try {
-      await api.chooseTribute(room.battle.id, choice);
-      await refreshOutcome();
-    } catch (error) {
-      setActionError(error.message);
-    } finally {
-      setChoosingTribute(false);
-      setTributeChoice("");
-    }
-  };
-
   if (loadError) {
     return (
       <main className="coding-room coding-room--state">
@@ -288,24 +274,18 @@ export default function CodingBattlePage() {
     );
   }
 
-  const isFinished = room.sprint.status === "finished";
-  const didWin = String(room.sprint.winner_id) === String(room.user.id);
-  const awaitingTribute = room.battle.status === "awaiting_tribute";
+  const isDraw = room.sprint.status === "expired" || room.battle.status === "draw";
+  const isFinished = room.sprint.status === "finished" || isDraw;
+  const didWin = !isDraw && String(room.sprint.winner_id) === String(room.user.id);
   const forfeited = room.battle.status === "forfeit_resolved";
-  const showOutcome = isFinished;
-  const tributePayment = tribute.payment.toLocaleString();
+  const showOutcome = isFinished || isDraw;
+  const tributePayment = (room.battle.tribute_amount ?? 0).toLocaleString();
   const tributeOutcomeMessage =
     room.battle.tribute_choice === "pay"
       ? didWin
-        ? `@${opponent.username} paid you ${tributePayment} treasure.`
-        : `You paid ${tributePayment} treasure to @${opponent.username}.`
-      : room.battle.tribute_choice === "tax"
-        ? didWin
-          ? `@${opponent.username} accepted a temporary 1% XP tribute to you for seven days.`
-          : "You accepted a temporary 1% XP tribute to the winner for seven days."
-        : didWin
-          ? "Your opponent has made their tribute choice. Your victory is secured."
-          : "Your tribute choice is confirmed. The battle is resolved.";
+        ? `${tributePayment} treasure was transferred to you automatically.`
+        : `${tributePayment} treasure was transferred to your opponent automatically.`
+      : "No treasure was available to transfer.";
 
   return (
     <main className="coding-room">
@@ -325,7 +305,6 @@ export default function CodingBattlePage() {
             <span>Live battle</span>
           </nav>
         </div>
-
         <div className="coding-room__schedule">
           <span>SCHEDULED TIME</span>
           <strong>{new Date(room.battle.proposed_time).toLocaleString()}</strong>
@@ -443,7 +422,12 @@ export default function CodingBattlePage() {
                   <span>solution.py</span>
                   <i aria-hidden="true" />
                 </div>
-                <span className="coding-room__language">Python 3</span>
+                <div className="coding-room__toolbar-status">
+                  <span className="coding-room__language">Python 3</span>
+                  <span className={`coding-room__match-timer${countdownSeconds <= 60 ? " coding-room__match-timer--urgent" : ""}`} role="timer" aria-label={`Time left ${countdownLabel}`}>
+                    TIME LEFT <strong>{countdownLabel}</strong>
+                  </span>
+                </div>
               </div>
 
               <div className="coding-room__editor">
@@ -463,7 +447,7 @@ export default function CodingBattlePage() {
                   onChange={updateCode}
                   onKeyDown={handleEditorKeyDown}
                   placeholder="Write your Python solution..."
-                  disabled={isFinished}
+                  disabled={isFinished || timeExpired}
                 />
               </div>
 
@@ -487,7 +471,7 @@ export default function CodingBattlePage() {
                     type="button"
                     className="coding-room__button coding-room__button--run"
                     onClick={handleRun}
-                    disabled={running || submitting || isFinished}
+                    disabled={running || submitting || isFinished || timeExpired}
                   >
                     {running ? "Running..." : "▶ Run"}
                   </button>
@@ -495,12 +479,17 @@ export default function CodingBattlePage() {
                     type="button"
                     className="coding-room__button coding-room__button--submit"
                     onClick={handleSubmit}
-                    disabled={running || submitting || isFinished}
+                    disabled={running || submitting || isFinished || timeExpired}
                   >
                     {submitting ? "Submitting..." : "Submit solution"}
                     {!submitting && <span aria-hidden="true">↑</span>}
                   </button>
                 </div>
+                {timeExpired && !isDraw && (
+                  <p className="coding-room__error" role="status">
+                    Time is up. Resolving the match as a draw...
+                  </p>
+                )}
               </div>
               {(actionError || statusError) && (
                 <p className="coding-room__error" role="alert">{actionError || `Battle status could not refresh: ${statusError}`}</p>
@@ -564,65 +553,35 @@ export default function CodingBattlePage() {
 
       {showOutcome && (
         <div className="coding-room__modal-backdrop">
-          <section className={`coding-room__outcome${didWin ? " coding-room__outcome--win" : " coding-room__outcome--loss"}`} role="dialog" aria-modal="true" aria-labelledby="battle-outcome-title">
-            <span className="coding-room__outcome-sigil" aria-hidden="true">{didWin ? "✦" : "×"}</span>
-            <span className="coding-room__eyebrow">{didWin ? "VICTORY" : "BATTLE OVER"}</span>
-            <h2 id="battle-outcome-title">{didWin ? "You won the battle" : "You lost this round"}</h2>
+          <section className={`coding-room__outcome${isDraw ? " coding-room__outcome--draw" : didWin ? " coding-room__outcome--win" : " coding-room__outcome--loss"}`} role="dialog" aria-modal="true" aria-labelledby="battle-outcome-title">
+            <span className="coding-room__outcome-sigil" aria-hidden="true">{isDraw ? "◇" : didWin ? "✦" : "×"}</span>
+            <span className="coding-room__eyebrow">{isDraw ? "TIME EXPIRED" : didWin ? "VICTORY" : "BATTLE OVER"}</span>
+            <h2 id="battle-outcome-title">{isDraw ? "The battle ended in a draw" : didWin ? "You won the battle" : "You lost this round"}</h2>
             <p>
-              {didWin
+              {isDraw
+                ? "Time ran out before either player solved the challenge. No treasure reward or tribute was given, and city ownership stays unchanged."
+                : didWin
                 ? forfeited
-                  ? `@${opponent.username} missed the check-in. Their temporary 1% XP tribute is active for seven days.`
-                  : awaitingTribute
-                  ? `@${opponent.username} is choosing their tribute. Hold your ground while they decide.`
+                  ? `@${opponent.username} missed the check-in. You won the battle and earned treasure.${room.battle.tribute_amount ? ` ${tributePayment} treasure was transferred to you automatically.` : ""}`
                   : room.battle.status === "resolved"
                     ? tributeOutcomeMessage
                     : "You solved the challenge first. The arena is recording the result."
                 : forfeited
-                  ? "You missed the check-in. A temporary 1% XP tribute is applied for seven days."
-                  : awaitingTribute
-                  ? "Choose how you will honor your defeat."
+                  ? `You missed the check-in. Your opponent won the battle.${room.battle.tribute_amount ? ` ${tributePayment} treasure was transferred automatically.` : ""}`
                   : room.battle.status === "resolved"
                     ? tributeOutcomeMessage
                     : "Your opponent solved the challenge first. Regroup and return stronger."}
             </p>
 
-            {!didWin && awaitingTribute ? (
-              <div className="coding-room__tribute-options">
-                <button
-                  type="button"
-                  className="coding-room__tribute-choice coding-room__tribute-choice--pay"
-                  onClick={() => handleTribute("pay")}
-                  disabled={choosingTribute || room.user.currency < tribute.payment}
-                >
-                  <span>Pay tribute</span>
-                  <strong>{tributePayment} treasure</strong>
-                  <small>{room.user.currency < tribute.payment ? "Not enough treasure" : "One-time payment"}</small>
-                </button>
-                <button
-                  type="button"
-                  className="coding-room__tribute-choice coding-room__tribute-choice--tax"
-                  onClick={() => handleTribute("tax")}
-                  disabled={choosingTribute}
-                >
-                  <span>Accept the tax</span>
-                  <strong>{tribute.tax}% XP</strong>
-                  <small>1% of XP for seven days</small>
-                </button>
-                {choosingTribute && <span className="coding-room__tribute-pending">Confirming {tributeChoice}...</span>}
-                {actionError && <p className="coding-room__error" role="alert">{actionError}</p>}
-              </div>
-            ) : (
-              <div className="coding-room__outcome-actions">
-                {didWin && awaitingTribute && <span className="coding-room__waiting"><span /> Waiting for tribute choice</span>}
-                <button
-                  type="button"
-                  className="coding-room__button coding-room__button--quiet"
-                  onClick={() => navigate("/home")}
-                >
-                  Return to dashboard
-                </button>
-              </div>
-            )}
+            <div className="coding-room__outcome-actions">
+              <button
+                type="button"
+                className="coding-room__button coding-room__button--quiet"
+                onClick={() => navigate("/home")}
+              >
+                Return to dashboard
+              </button>
+            </div>
           </section>
         </div>
       )}

@@ -1,21 +1,39 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
 from core.security import get_current_user
+from core.economy import as_utc, utc_now
+from core.game_constants import BATTLE_DURATION_MINUTES
 from core.piston_client import run_python
 from models.user import User
 from models.battle import Battle
 from models.sprint import Sprint
 from models.problem import Problem
 from schemas.submission import SubmissionRequest, SubmissionResult, TestCaseResult
-from routers.sprints import _pay_rewards, _record_battle_result, _resolve_tribute
+from routers.sprints import (
+    _expire_sprint_if_due,
+    _settle_winning_battle,
+)
 
 router = APIRouter(prefix="/sprints", tags=["submissions"])
 
 
-def _evaluate_submission(sprint_id: int, code: str, current_user: User, db: Session):
-    sprint = db.query(Sprint).filter(Sprint.id == sprint_id).first()
+def _evaluate_submission(
+    sprint_id: int,
+    code: str,
+    current_user: User,
+    db: Session,
+    *,
+    lock_sprint: bool = False,
+):
+    submitted_at = utc_now()
+    sprint_query = db.query(Sprint).filter(Sprint.id == sprint_id)
+    if lock_sprint:
+        sprint_query = sprint_query.with_for_update()
+    sprint = sprint_query.first()
     if not sprint:
         raise HTTPException(status_code=404, detail="Sprint not found")
 
@@ -23,13 +41,24 @@ def _evaluate_submission(sprint_id: int, code: str, current_user: User, db: Sess
     if current_user.id not in (battle.challenger_id, battle.opponent_id):
         raise HTTPException(status_code=403, detail="You're not part of this battle")
 
-    if sprint.status == "finished":
-        raise HTTPException(status_code=400, detail="This sprint is already finished")
+    if sprint.status in ("finished", "expired"):
+        raise HTTPException(status_code=409, detail=f"This sprint is already {sprint.status}")
 
     if battle.status != "accepted" or battle.match_started_at is None:
         raise HTTPException(
             status_code=409,
             detail="Both players must join before the coding sprint can start",
+        )
+
+    deadline = as_utc(battle.match_started_at) + timedelta(
+        minutes=BATTLE_DURATION_MINUTES[battle.difficulty]
+    )
+    if submitted_at >= deadline:
+        _expire_sprint_if_due(sprint, battle, submitted_at)
+        db.commit()
+        raise HTTPException(
+            status_code=409,
+            detail="Time is up. The battle ended in a draw.",
         )
 
     if not sprint.problem_id:
@@ -59,7 +88,7 @@ def _evaluate_submission(sprint_id: int, code: str, current_user: User, db: Sess
             error=run_result["error"] if tc.is_sample else None,
         ))
 
-    return sprint, battle, results, passed_count
+    return sprint, battle, results, passed_count, submitted_at
 
 
 @router.post("/{sprint_id}/run", response_model=SubmissionResult)
@@ -69,7 +98,7 @@ def run_code(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    sprint, _, results, passed_count = _evaluate_submission(
+    sprint, _, results, passed_count, _ = _evaluate_submission(
         sprint_id, payload.code, current_user, db
     )
     all_passed = passed_count == len(results)
@@ -94,8 +123,8 @@ def submit_code(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    sprint, battle, results, passed_count = _evaluate_submission(
-        sprint_id, payload.code, current_user, db
+    sprint, battle, results, passed_count, submitted_at = _evaluate_submission(
+        sprint_id, payload.code, current_user, db, lock_sprint=True
     )
     all_passed = passed_count == len(results)
 
@@ -110,9 +139,20 @@ def submit_code(
         )
 
     # All test cases passed — this player wins the sprint outright.
+    deadline = as_utc(battle.match_started_at) + timedelta(
+        minutes=BATTLE_DURATION_MINUTES[battle.difficulty]
+    )
+    if submitted_at >= deadline:
+        _expire_sprint_if_due(sprint, battle, submitted_at)
+        db.commit()
+        raise HTTPException(
+            status_code=409,
+            detail="Time is up. The battle ended in a draw.",
+        )
+
     claimed = (
         db.query(Sprint)
-        .filter(Sprint.id == sprint.id, Sprint.status != "finished")
+        .filter(Sprint.id == sprint.id, Sprint.status == "pending")
         .update(
             {
                 Sprint.status: "finished",
@@ -126,9 +166,6 @@ def submit_code(
         db.rollback()
         raise HTTPException(status_code=409, detail="Another player already won this sprint")
 
-    db.commit()
-    db.refresh(sprint)
-
     loser_id = (
         battle.opponent_id
         if current_user.id == battle.challenger_id
@@ -137,11 +174,14 @@ def submit_code(
     loser = db.query(User).filter(User.id == loser_id).first()
     if loser is None:
         raise HTTPException(status_code=404, detail="Battle participant not found")
-    _record_battle_result(current_user, loser)
-    _pay_rewards(current_user, battle.difficulty, db)
-    _resolve_tribute(battle)
+    sprint.status = "finished"
+    sprint.winner_id = current_user.id
+    sprint.claimed_winner_id = current_user.id
+    _settle_winning_battle(battle, current_user, loser, db)
 
     db.commit()
+    db.refresh(sprint)
+    db.refresh(battle)
 
     return SubmissionResult(
         all_passed=True,

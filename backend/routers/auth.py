@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
-from datetime import datetime, timezone
 from database import get_db
 from models.user import User
 from models.city import City
@@ -10,10 +9,9 @@ from models.sprint import Sprint
 from schemas.user import UserCreate, UserResponse, UserLogin, Token
 from core.security import hash_password, verify_password, create_access_token
 from core.security import get_current_user
-from core.economy import accrue_city_xp
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-STARTER_TREASURE = 5000
+STARTER_TREASURE = 20000
 
 @router.get("/username-availability")
 def username_availability(username: str, db: Session = Depends(get_db)):
@@ -37,7 +35,6 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
         password_hash=hash_password(user_data.password),
         college_name=user_data.college_name,
         currency=STARTER_TREASURE,
-        city_xp_updated_at=datetime.now(timezone.utc),
     )
     db.add(new_user)
     db.commit()
@@ -71,15 +68,6 @@ def me(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    current_user = (
-        db.query(User)
-        .filter(User.id == current_user.id)
-        .with_for_update()
-        .one()
-    )
-    accrue_city_xp(current_user, db)
-    db.commit()
-    db.refresh(current_user)
     completed_sprints = (
         db.query(Sprint.winner_id, Sprint.created_at)
         .join(Battle, Battle.id == Sprint.battle_id)
@@ -110,7 +98,6 @@ def me(
         "username": current_user.username,
         "college_name": current_user.college_name,
         "currency": current_user.currency,
-        "xp": current_user.xp,
         "win_streak": current_streak,
         "wins": wins,
         "losses": len(completed_sprints) - wins,

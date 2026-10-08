@@ -52,8 +52,8 @@ export default function Landing({ onGetStarted }) {
           </h1>
           <p className="hero-sub">
 VYURUTA is a solo coding strategy game where players battle others through coding challenges.
-Choose **Fire or Water**, win matches, earn points, and collect tribute from defeated players.
-Your weekly wins determine your rank as you compete to become the **ultimate ruler**.
+Choose **Fire or Water**, win matches, earn treasure, and climb the weekly leaderboard.
+Battle for cities and compete to become the **ultimate ruler**.
 
 
           </p>
@@ -82,8 +82,8 @@ Your weekly wins determine your rank as you compete to become the **ultimate rul
         <div className="about-inner">
           <h2 className="about-kicker">What is Vyuruta?</h2>
           <p className="about-lead">
-            Vyuruta is a solo coding strategy game where players battle others through coding challenges to earn points and tribute.
-Choose Fire or Water, climb the weekly rankings, and compete to become the ultimate ruler.
+            Vyuruta is a solo coding strategy game where players battle through coding challenges to earn treasure.
+Choose Fire or Water, battle for cities, and climb the weekly treasure leaderboard.
           </p>
 
           <div className="map-cta">
@@ -100,7 +100,7 @@ Choose Fire or Water, climb the weekly rankings, and compete to become the ultim
             <div className="about-card">
               <h3>Coding Battles</h3>
               <p>Challenge players through DSA and coding matches.
-Win battles to gain points and influence.</p>
+Win battles to earn treasure and influence.</p>
             </div>
             <div className="about-card">
               <h3>Choose your side</h3>
@@ -118,8 +118,8 @@ Rise through them to become the ultimate ruler.</p>
             </div>
             <div className="about-card">
               <h3>Tribute System</h3>
-              <p>Defeated players can pay tribute to their winners.
-Repeated losses can increase the tax they owe.</p>
+              <p>After a loss, players can make a one-time treasure payment.
+XP and tax mechanics are shelved for now.</p>
             </div>
             <div className="about-card">
               <h3>Ultimate Ruler</h3>

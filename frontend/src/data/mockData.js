@@ -4,11 +4,10 @@ export const mockPlayer = {
   id: "p1",
   name: "Lohith",
   city: { id: "agni-1-3", name: "Ember Hold" },
-  currency: 3500,
+  currency: 20000,
   wins: 4,
   losses: 1,
   streak: 2,
-  taxMode: null, // "tax" while paying 1% tribute, otherwise null
 };
 
 export const mockPlayers = [

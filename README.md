@@ -10,11 +10,12 @@ Campus DSA-battle strategy game. Solo build. Target: prove it on home campus (~3
 
 ## Game mechanics (locked)
 
-- **Map:** 100 cities, grouped by subject cluster, forest visual theme (unclaimed = overgrown, claimed = cleared + team banner).
+- **Map:** 200 cities (100 Agni and 100 Jal), grouped by subject cluster, forest visual theme (unclaimed = overgrown, claimed = cleared + team banner).
 - **City assignment:** no unclaimed-zone conquest in v1. New team joining = auto-assigned one unclaimed city as their home. After that, ownership only changes via battle.
-- **Battle flow:** propose → accept/reject → both players check in. The sprint unlocks when both are present (even before the scheduled time); if one player checks in and the other misses the scheduled time plus a one-minute grace period, the present player wins by forfeit.
-- **Conquest/tribute:** after a loss, choose a one-time currency payment or a temporary 1% XP tribute that expires after seven days. A no-show automatically incurs the 1% tribute for seven days.
-- **Economy:** new players start with 5,000 treasure; an owned city produces 100 XP per day.
+- **Battle flow:** propose → accept/reject → both players check in. The challenger chooses Easy (default), Medium, or Difficult; the assigned question matches that tier. Easy questions focus on approachable fundamentals, Medium is around Two Sum/easy-medium, and Difficult stays medium to medium-hard. The coding timer starts when both players are present: 5 minutes for Easy, 10 for Medium, and 30 for Difficult. The first fully correct submission wins. If time expires before either solves it, the match is a draw with no reward, tribute, or city change. If one player checks in and the other misses the scheduled time plus a one-minute grace period, the present player wins by forfeit.
+- **Conquest/tribute:** after a coding battle loss, treasure is transferred automatically to the winner based on difficulty (up to the loser's available balance); both players can leave the result animation without waiting for a decision. XP and passive tax mechanics are shelved.
+- **Economy:** every player starts with 20,000 treasure and may claim 30,000 daily treasure once per UTC day. Battle rewards and leaderboard rankings use treasure; passive XP generation is shelved.
+- **Battle history:** the dashboard lists recent battle treasure transfers won from or lost to other players. The map battle panel keeps active requests separate and limits its completed/closed history to the 10 most recent battles.
 - **Game format v1:** DSA Sprint only (Debug Duel parked for post-pilot).
 - **Team profile:** name + banner, bio, member list, no lead role, unified event/history feed (claims/losses/wins/hosting) that doubles as the global activity feed.
 - **Weekly contest:** all teams compete together; winner gets 5% of campus-wide territory points for the week; 3-win streak → hosting rights (host sits out, curates from AI question pool).
@@ -72,3 +73,5 @@ Current layout:
 Pick up with either:
 (a) wiring Home page to the local FastAPI backend, or
 (b) building the Map page or Battle proposal page next
+
+username tho kuda search chheyyachu cities ni

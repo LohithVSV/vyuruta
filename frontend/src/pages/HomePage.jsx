@@ -14,8 +14,8 @@ import "./HomePage.css";
 const BATTLE_STATUS_LABEL = {
   pending: "Battle request pending",
   accepted: "Ready to enter",
-  awaiting_tribute: "Tribute decision pending",
 };
+const DAILY_TREASURE_AMOUNT = 30000;
 
 function formatTimestamp(value) {
   if (!value) return "Recently";
@@ -36,11 +36,51 @@ export default function HomePage() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [leaderboardError, setLeaderboardError] = useState(false);
+  const [dailyTreasure, setDailyTreasure] = useState(null);
+  const [dailyTreasureError, setDailyTreasureError] = useState("");
+  const [claimingDailyTreasure, setClaimingDailyTreasure] = useState(false);
+  const [treasureHistory, setTreasureHistory] = useState([]);
+  const [treasureHistoryError, setTreasureHistoryError] = useState("");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!getToken()) return undefined;
+
+    let cancelled = false;
+    const refreshDailyTreasure = () => {
+      api.dailyTreasure()
+        .then((status) => {
+          if (!cancelled) {
+            setDailyTreasure(status);
+            setDailyTreasureError("");
+          }
+        })
+        .catch((error) => {
+          if (!cancelled) setDailyTreasureError(error.message);
+        });
+    };
+    api.treasureHistory()
+      .then((entries) => {
+        if (!cancelled) {
+          setTreasureHistory(entries);
+          setTreasureHistoryError("");
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) setTreasureHistoryError(error.message);
+      });
+    refreshDailyTreasure();
+
+    const interval = window.setInterval(refreshDailyTreasure, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -175,7 +215,7 @@ export default function HomePage() {
   };
   const avatar = team.faction === "fire" ? fireCharacter : waterCharacter;
   const battles = allBattles
-    .filter((battle) => ["pending", "accepted", "awaiting_tribute"].includes(battle.status))
+    .filter((battle) => ["pending", "accepted"].includes(battle.status))
     .map((battle) => {
       const isOutgoing = String(battle.challenger_id) === String(user.id);
       const opponentId =
@@ -233,6 +273,31 @@ export default function HomePage() {
   const handleSignOut = () => {
     clearToken();
     navigate("/auth", { replace: true });
+  };
+
+  const handleClaimDailyTreasure = async () => {
+    if (claimingDailyTreasure || dailyTreasure?.claimed_today) return;
+    setClaimingDailyTreasure(true);
+    setDailyTreasureError("");
+    try {
+      const status = await api.claimDailyTreasure();
+      setDailyTreasure(status);
+      setDashboard((current) =>
+        current
+          ? { ...current, user: { ...current.user, currency: status.currency } }
+          : current,
+      );
+      try {
+        setLeaderboard(await api.weeklyLeaderboard(100));
+        setLeaderboardError(false);
+      } catch {
+        setLeaderboardError(true);
+      }
+    } catch (error) {
+      setDailyTreasureError(error.message);
+    } finally {
+      setClaimingDailyTreasure(false);
+    }
   };
 
   return (
@@ -499,7 +564,7 @@ export default function HomePage() {
 
                 <div>
                   <span className="section-heading__eyebrow">
-                    THIS WEEK
+                    TREASURE THIS WEEK
                   </span>
 
                   <h2>Leaderboard</h2>
@@ -556,8 +621,8 @@ export default function HomePage() {
                           {entry.username}
                         </span>
 
-                        <span className="leaderboard__xp">
-                          {entry.xp} XP
+                        <span className="leaderboard__treasure">
+                          {entry.treasure.toLocaleString()} ◈
                         </span>
 
                       </div>
@@ -587,8 +652,8 @@ export default function HomePage() {
                           {team.username}
                         </span>
 
-                        <span className="leaderboard__xp">
-                          {leaderboard[currentUserIndex]?.xp ?? 0} XP
+                        <span className="leaderboard__treasure">
+                          {(leaderboard[currentUserIndex]?.treasure ?? 0).toLocaleString()} ◈
                         </span>
 
                       </div>
@@ -709,6 +774,31 @@ export default function HomePage() {
 
           </div>
 
+          <div className="profile__daily-treasure">
+            <div>
+              <strong>Daily treasure</strong>
+              <span>
+                {dailyTreasure?.claimed_today
+                  ? "Today's treasure claimed"
+                  : `Claim ${DAILY_TREASURE_AMOUNT.toLocaleString()} treasure today`}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleClaimDailyTreasure}
+              disabled={!dailyTreasure || dailyTreasure.claimed_today || claimingDailyTreasure}
+            >
+              {claimingDailyTreasure
+                ? "Claiming..."
+                : dailyTreasure?.claimed_today
+                  ? "Claimed"
+                  : "Claim"}
+            </button>
+            {dailyTreasureError && (
+              <p role="alert">{dailyTreasureError}</p>
+            )}
+          </div>
+
 
           {/* Record */}
 
@@ -775,6 +865,43 @@ export default function HomePage() {
 
           </div>
 
+          <div className="profile__history profile__treasure-history">
+            <div className="profile__history-heading">
+              <span>TREASURE FROM BATTLES</span>
+            </div>
+            <ul>
+              {treasureHistory.map((entry) => {
+                const won = entry.amount > 0;
+                const amount = Math.abs(entry.amount).toLocaleString();
+                return (
+                  <li
+                    key={entry.id}
+                    className={`history-item ${won ? "history-item--win" : "history-item--loss"}`}
+                  >
+                    <span className="history-item__marker" />
+                    <div>
+                      <p>
+                        {won ? `Won ${amount} from` : `Lost ${amount} to`}{" "}
+                        @{entry.related_username ?? "battle opponent"}
+                      </p>
+                      <time>{formatTimestamp(entry.created_at)}</time>
+                    </div>
+                  </li>
+                );
+              })}
+              {treasureHistory.length === 0 && (
+                <li className="history-item">
+                  <span className="history-item__marker" />
+                  <div><p>No battle treasure transfers yet.</p></div>
+                </li>
+              )}
+              {treasureHistoryError && (
+                <li className="history-item" role="alert">
+                  <div><p>Treasure history unavailable: {treasureHistoryError}</p></div>
+                </li>
+              )}
+            </ul>
+          </div>
 
           <button
             className="profile__signout"

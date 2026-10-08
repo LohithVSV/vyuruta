@@ -6,22 +6,22 @@ from sqlalchemy import or_
 
 from database import get_db
 from core.security import get_current_user
-from core.game_constants import TRIBUTE_PAYMENT_BY_DIFFICULTY
 from models.user import User
 from models.city import City
 from models.battle import Battle
 from models.sprint import Sprint
-from models.tribute import Tribute
 from core.economy import (
     as_utc,
-    create_temporary_tribute,
     utc_now,
 )
 from schemas.activity import RecentBattleActivity
 from schemas.battle import BattleCreate, BattleResponse
-from schemas.tribute import TributeChoice
 from routers.problems import pick_random_problem
-from routers.sprints import _resolve_no_show
+from routers.sprints import (
+    _expire_sprint_if_due,
+    _resolve_no_show,
+    _transfer_battle_tribute,
+)
 
 router = APIRouter(prefix="/battles", tags=["battles"])
 NO_SHOW_GRACE = timedelta(minutes=1)
@@ -66,7 +66,39 @@ def _settle_no_show_if_due(battle: Battle, db: Session, now=None) -> bool:
 
     winner_id = battle.challenger_id if challenger_joined else battle.opponent_id
     loser_id = battle.opponent_id if challenger_joined else battle.challenger_id
-    _resolve_no_show(battle, sprint, winner_id, loser_id, db, current_time)
+    _resolve_no_show(battle, sprint, winner_id, loser_id, db)
+    return True
+
+
+def _settle_legacy_tribute(battle: Battle, db: Session) -> bool:
+    if battle.status != "awaiting_tribute":
+        return False
+
+    locked_battle = (
+        db.query(Battle)
+        .filter(Battle.id == battle.id)
+        .with_for_update()
+        .first()
+    )
+    if locked_battle is None or locked_battle.status != "awaiting_tribute":
+        return False
+
+    sprint = db.query(Sprint).filter(Sprint.battle_id == locked_battle.id).first()
+    if sprint is None or sprint.winner_id is None:
+        raise HTTPException(status_code=409, detail="This battle has no completed sprint to settle")
+
+    winner = db.query(User).filter(User.id == sprint.winner_id).first()
+    loser_id = (
+        locked_battle.opponent_id
+        if sprint.winner_id == locked_battle.challenger_id
+        else locked_battle.challenger_id
+    )
+    loser = db.query(User).filter(User.id == loser_id).first()
+    if winner is None or loser is None:
+        raise HTTPException(status_code=404, detail="Battle participant not found")
+
+    _transfer_battle_tribute(locked_battle, winner, loser, db)
+    locked_battle.status = "resolved"
     return True
 
 
@@ -107,7 +139,6 @@ def get_my_battles(
 ):
     battles = (
         db.query(Battle)
-        .with_for_update()
         .filter(
             or_(
                 Battle.challenger_id == current_user.id,
@@ -119,7 +150,20 @@ def get_my_battles(
     )
     settled_any = False
     for battle in battles:
-        settled_any = _settle_no_show_if_due(battle, db) or settled_any
+        if _settle_legacy_tribute(battle, db):
+            settled_any = True
+            continue
+        if _settle_no_show_if_due(battle, db):
+            settled_any = True
+            continue
+        sprint = (
+            db.query(Sprint)
+            .filter(Sprint.battle_id == battle.id)
+            .with_for_update()
+            .first()
+        )
+        if sprint and _expire_sprint_if_due(sprint, battle):
+            settled_any = True
     if settled_any:
         db.commit()
         for battle in battles:
@@ -229,12 +273,11 @@ def join_battle(
             db.commit()
             db.refresh(battle)
             return battle
-
         db.commit()
         db.refresh(battle)
         return battle
 
-    if battle.status in ("resolved", "awaiting_tribute", "forfeit_resolved"):
+    if battle.status in ("resolved", "forfeit_resolved"):
         return battle
     raise HTTPException(status_code=400, detail=f"Battle is already {battle.status}")
 
@@ -256,67 +299,6 @@ def reject_battle(
         raise HTTPException(status_code=400, detail=f"Battle is already {battle.status}")
 
     battle.status = "rejected"
-    db.commit()
-    db.refresh(battle)
-    return battle
-
-
-@router.post("/{battle_id}/tribute", response_model=BattleResponse)
-def resolve_tribute(
-    battle_id: int,
-    choice_data: TributeChoice,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    battle = (
-        db.query(Battle)
-        .filter(Battle.id == battle_id)
-        .with_for_update()
-        .first()
-    )
-    if not battle:
-        raise HTTPException(status_code=404, detail="Battle not found")
-
-    if battle.status != "awaiting_tribute":
-        raise HTTPException(status_code=400, detail="This battle has no pending tribute decision")
-
-    sprint = db.query(Sprint).filter(Sprint.battle_id == battle.id).first()
-    winner_id = sprint.winner_id
-    loser_id = battle.opponent_id if winner_id == battle.challenger_id else battle.challenger_id
-
-    if current_user.id != loser_id:
-        raise HTTPException(status_code=403, detail="Only the loser of the sprint chooses tribute terms")
-
-    loser = db.query(User).filter(User.id == loser_id).first()
-    winner = db.query(User).filter(User.id == winner_id).first()
-
-    payment_amount = TRIBUTE_PAYMENT_BY_DIFFICULTY[battle.difficulty]
-
-    if choice_data.choice == "pay":
-        if loser.currency < payment_amount:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Not enough treasure to pay tribute ({payment_amount} needed) — choose the tax option instead",
-            )
-        loser.currency -= payment_amount
-        winner.currency += payment_amount
-        battle.tribute_choice = "pay"
-        existing_debt = (
-            db.query(Tribute)
-            .filter(
-                Tribute.debtor_id == loser.id,
-                Tribute.creditor_id == winner.id,
-                Tribute.active.is_(True),
-            )
-            .first()
-        )
-        if existing_debt:
-            existing_debt.active = False
-    else:  # "tax" — ongoing tax on the loser's future XP earnings
-        create_temporary_tribute(loser, winner, db)
-        battle.tribute_choice = "tax"
-
-    battle.status = "resolved"
     db.commit()
     db.refresh(battle)
     return battle
