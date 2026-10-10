@@ -30,6 +30,14 @@ Campus DSA-battle strategy game. Solo build. Target: prove it on home campus (~3
 
 Add a date-keyed entry to `backend/seed_daily_problems.py` with the title, slug, difficulty, prompt, topic names, and test cases. Each test case has stdin `input_data`, expected stdout `expected_output`, and `is_sample` to control whether players can see it. Run `python seed_daily_problems.py` from `backend/` to publish the question for that UTC date; rerunning skips dates that already have a published question.
 
+## Backend secrets and Render health checks
+
+The backend requires `DATABASE_URL` and `SECRET_KEY` as environment variables. For local development, copy `backend/.env.example` to `backend/.env`, set the database URL, and replace the secret placeholder with a unique random value. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"` from the backend environment. The backend refuses to start if the secret is missing, too short, or still a placeholder. Never commit `.env`.
+
+Set the same variables in the Render service's environment settings. Rotating `SECRET_KEY` invalidates existing login tokens, so users will need to sign in again.
+
+The optional GitHub Actions workflow at `.github/workflows/render-health-check.yml` pings `/health` every five minutes to keep a Render free web service awake. To enable it, add a repository variable named `RENDER_BACKEND_URL` with the backend's base URL (for example, `https://your-service.onrender.com`). Keeping a free instance awake consumes its monthly free instance hours continuously (about 720 hours per month); Render's free allowance is 750 hours per workspace, shared across services. Without the variable, the workflow fails with setup instructions.
+
 ## Still open / parked
 
 1. City-tier generation rates (actual numbers)

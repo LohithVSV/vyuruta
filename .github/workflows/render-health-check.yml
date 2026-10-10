@@ -1,0 +1,21 @@
+name: Render health check
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render backend
+        env:
+          RENDER_BACKEND_URL: ${{ vars.RENDER_BACKEND_URL }}
+        run: |
+          if [ -z "$RENDER_BACKEND_URL" ]; then
+            echo "Set the RENDER_BACKEND_URL repository variable to enable health checks."
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 20 \
+            "${RENDER_BACKEND_URL%/}/health" > /dev/null

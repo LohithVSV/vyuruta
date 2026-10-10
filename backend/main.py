@@ -44,3 +44,8 @@ app.include_router(daily_challenges.router)
 @app.get("/")
 def read_root():
     return {"message": "Vyuruta backend is alive"}
+
+
+@app.get("/health", include_in_schema=False)
+def health_check():
+    return {"status": "ok"}
