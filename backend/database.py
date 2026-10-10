@@ -14,6 +14,9 @@ Base = declarative_base()
 def get_db():
     db = SessionLocal()
     try:
+        from core.seasons import ensure_active_season
+
+        ensure_active_season(db)
         yield db
     finally:
         db.close()

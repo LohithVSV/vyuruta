@@ -10,7 +10,7 @@ from models.user import User
 from schemas.treasure import DailyTreasureStatus, TreasureHistoryEntry
 
 router = APIRouter(prefix="/treasure", tags=["treasure"])
-DAILY_TREASURE_AMOUNT = 30000
+DAILY_TREASURE_AMOUNT = 20000
 
 
 def _utc_day_bounds(now: datetime | None = None) -> tuple[datetime, datetime]:

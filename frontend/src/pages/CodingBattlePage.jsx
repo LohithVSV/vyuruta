@@ -24,6 +24,7 @@ export default function CodingBattlePage() {
   const [failedSubmit, setFailedSubmit] = useState(null);
   const [running, setRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [leavingBattle, setLeavingBattle] = useState(false);
   const [clockNow, setClockNow] = useState(0);
   const joinAttempt = useRef(null);
 
@@ -250,6 +251,39 @@ export default function CodingBattlePage() {
     }
   };
 
+  const handleReturnToDashboard = async () => {
+    if (!room) return;
+
+    const battleIsActive =
+      room.battle.status === "accepted" && room.sprint.status === "pending";
+    if (!battleIsActive) {
+      navigate("/home");
+      return;
+    }
+
+    if (running || submitting || leavingBattle) {
+      setStatusError("Wait for the current action to finish before leaving.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "If you return to the dashboard now, you will forfeit this battle. Your opponent will win, and any applicable battle tribute will be deducted from your treasure and awarded to them. Do you want to continue?",
+    );
+    if (!confirmed) return;
+
+    setLeavingBattle(true);
+    setStatusError("");
+    setActionError("");
+    try {
+      await api.forfeitSprint(room.sprint.id);
+      navigate("/home");
+    } catch (error) {
+      setActionError(`Could not forfeit the battle: ${error.message}`);
+    } finally {
+      setLeavingBattle(false);
+    }
+  };
+
   if (loadError) {
     return (
       <main className="coding-room coding-room--state">
@@ -294,13 +328,20 @@ export default function CodingBattlePage() {
           <button
             type="button"
             className="coding-room__brand"
-            onClick={() => navigate("/home")}
+            onClick={handleReturnToDashboard}
+            disabled={leavingBattle}
             aria-label="Return to Vyuruta dashboard"
           >
             <img src={vyurutaLogo} alt="Vyuruta" />
           </button>
           <nav className="coding-room__nav" aria-label="Main navigation">
-            <button type="button" onClick={() => navigate("/home")}>Dashboard</button>
+            <button
+              type="button"
+              onClick={handleReturnToDashboard}
+              disabled={leavingBattle}
+            >
+              {leavingBattle ? "Forfeiting..." : "Dashboard"}
+            </button>
             <span aria-hidden="true">/</span>
             <span>Live battle</span>
           </nav>
@@ -519,7 +560,11 @@ export default function CodingBattlePage() {
                   You may begin as soon as your opponent checks in.
                 </span>
               )}
-              {statusError && <p className="coding-room__error" role="alert">{statusError}</p>}
+              {(actionError || statusError) && (
+                <p className="coding-room__error" role="alert">
+                  {actionError || `Battle status could not refresh: ${statusError}`}
+                </p>
+              )}
             </div>
           )}
         </section>
@@ -562,12 +607,12 @@ export default function CodingBattlePage() {
                 ? "Time ran out before either player solved the challenge. No treasure reward or tribute was given, and city ownership stays unchanged."
                 : didWin
                 ? forfeited
-                  ? `@${opponent.username} missed the check-in. You won the battle and earned treasure.${room.battle.tribute_amount ? ` ${tributePayment} treasure was transferred to you automatically.` : ""}`
+                  ? `@${opponent.username} forfeited by leaving the battle or missing check-in. You won and earned treasure.${room.battle.tribute_amount ? ` ${tributePayment} treasure was transferred to you automatically.` : ""}`
                   : room.battle.status === "resolved"
                     ? tributeOutcomeMessage
                     : "You solved the challenge first. The arena is recording the result."
                 : forfeited
-                  ? `You missed the check-in. Your opponent won the battle.${room.battle.tribute_amount ? ` ${tributePayment} treasure was transferred automatically.` : ""}`
+                  ? `You forfeited by leaving the battle or missing check-in. Your opponent won.${room.battle.tribute_amount ? ` ${tributePayment} treasure was transferred automatically.` : ""}`
                   : room.battle.status === "resolved"
                     ? tributeOutcomeMessage
                     : "Your opponent solved the challenge first. Regroup and return stronger."}

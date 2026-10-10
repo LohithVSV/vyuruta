@@ -11,11 +11,7 @@ import { api, clearToken, getToken } from "../api";
 
 import "./HomePage.css";
 
-const BATTLE_STATUS_LABEL = {
-  pending: "Battle request pending",
-  accepted: "Ready to enter",
-};
-const DAILY_TREASURE_AMOUNT = 30000;
+const DAILY_TREASURE_AMOUNT = 20000;
 
 function formatTimestamp(value) {
   if (!value) return "Recently";
@@ -27,15 +23,29 @@ function formatTimestamp(value) {
   });
 }
 
+function formatCountdown(target, now) {
+  const targetTime = new Date(target).getTime();
+  if (Number.isNaN(targetTime)) return null;
+  const totalSeconds = Math.max(0, Math.ceil((targetTime - now) / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours, minutes, seconds]
+    .map((part) => String(part).padStart(2, "0"))
+    .join(":");
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const [dashboard, setDashboard] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [refreshError, setRefreshError] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [leaderboardError, setLeaderboardError] = useState(false);
+  const [seasonInfo, setSeasonInfo] = useState(null);
   const [dailyTreasure, setDailyTreasure] = useState(null);
   const [dailyTreasureError, setDailyTreasureError] = useState("");
   const [claimingDailyTreasure, setClaimingDailyTreasure] = useState(false);
@@ -46,6 +56,11 @@ export default function HomePage() {
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setClockNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -97,8 +112,8 @@ export default function HomePage() {
       api.mySprints(),
       api.cities(),
       api.recentBattles(),
-      api.weeklyLeaderboard(100).then(
-        (entries) => ({ entries }),
+      api.leaderboard("weekly", "all", 100).then(
+        (result) => ({ result }),
         (error) => ({ error }),
       ),
     ])
@@ -110,7 +125,17 @@ export default function HomePage() {
           setLeaderboard([]);
         } else {
           setLeaderboardError(false);
-          setLeaderboard(rankingResult.entries);
+          setLeaderboard(rankingResult.result.entries);
+          setSeasonInfo({
+            ...rankingResult.result,
+            daysRemaining: Math.max(
+              0,
+              Math.ceil(
+                (new Date(rankingResult.result.season_end).getTime() - Date.now()) /
+                  86_400_000,
+              ),
+            ),
+          });
         }
       })
       .catch((error) => {
@@ -162,10 +187,6 @@ export default function HomePage() {
     };
   }, []);
 
-  const cityById = useMemo(
-    () => new Map((dashboard?.cities ?? []).map((city) => [city.id, city])),
-    [dashboard],
-  );
   const ownerById = useMemo(
     () =>
       new Map(
@@ -200,6 +221,9 @@ export default function HomePage() {
 
   const { user, battles: allBattles, sprints, cities, recentBattles } = dashboard;
   const playerCity = cities.find((city) => city.owner_id === user.id) ?? null;
+  const currentBattles = allBattles.filter((battle) =>
+    ["pending", "accepted"].includes(battle.status),
+  );
   const finishedSprints = sprints.filter(
     (sprint) => sprint.status === "finished" && sprint.winner_id != null,
   );
@@ -207,31 +231,12 @@ export default function HomePage() {
     id: user.id,
     username: user.username,
     faction: playerCity?.faction ?? "fire",
-    citiesHeld: cities.filter((city) => city.owner_id === user.id).length,
     wins: user.wins,
     losses: user.losses,
     streak: user.win_streak,
     currency: user.currency,
   };
   const avatar = team.faction === "fire" ? fireCharacter : waterCharacter;
-  const battles = allBattles
-    .filter((battle) => ["pending", "accepted"].includes(battle.status))
-    .map((battle) => {
-      const isOutgoing = String(battle.challenger_id) === String(user.id);
-      const opponentId =
-        isOutgoing ? battle.opponent_id : battle.challenger_id;
-      const city = isOutgoing
-        ? cityById.get(battle.city_id)
-        : cities.find((entry) => String(entry.owner_id) === String(opponentId));
-      return {
-        id: battle.id,
-        cityDbId: city?.id,
-        direction: isOutgoing ? "outgoing" : "incoming",
-        opponent: ownerById.get(opponentId) ?? `Player ${opponentId}`,
-        cityName: city?.name ?? "Unknown city",
-        status: battle.status,
-      };
-    });
   const history = finishedSprints
     .map((sprint) => {
       const battle = allBattles.find((entry) => entry.id === sprint.battle_id);
@@ -266,13 +271,18 @@ export default function HomePage() {
     currentUserIndex !== -1 ? currentUserIndex + 1 : null;
 
   const topTen = leaderboard.slice(0, 10);
+  const seasonDaysRemaining = seasonInfo?.daysRemaining ?? null;
 
   const currentUserOutsideTopTen =
     currentUserRank !== null && currentUserRank > 10;
+  const nextRewardCountdown =
+    dailyTreasure?.claimed_today && dailyTreasure.next_claim_at
+      ? formatCountdown(dailyTreasure.next_claim_at, clockNow)
+      : null;
 
   const handleSignOut = () => {
     clearToken();
-    navigate("/auth", { replace: true });
+    navigate("/", { replace: true });
   };
 
   const handleClaimDailyTreasure = async () => {
@@ -288,7 +298,15 @@ export default function HomePage() {
           : current,
       );
       try {
-        setLeaderboard(await api.weeklyLeaderboard(100));
+        const result = await api.leaderboard("weekly", "all", 100);
+        setLeaderboard(result.entries);
+        setSeasonInfo({
+          ...result,
+          daysRemaining: Math.max(
+            0,
+            Math.ceil((new Date(result.season_end).getTime() - Date.now()) / 86_400_000),
+          ),
+        });
         setLeaderboardError(false);
       } catch {
         setLeaderboardError(true);
@@ -337,22 +355,54 @@ export default function HomePage() {
 
           <button
             className="home__nav-item"
-            onClick={() => navigate("/map")}
+            onClick={() => navigate("/leaderboard")}
           >
-            Battles
+            Leaderboard
           </button>
 
         </nav>
 
-        <button
-          className="home__map-button"
-          onClick={() => navigate("/map")}
-        >
-          <span>Enter World</span>
-          <span className="home__map-arrow">↗</span>
-        </button>
+        <div className="home__header-actions">
+          <div className="home__claim-group">
+            <button
+              type="button"
+              className="home__claim-button"
+              onClick={handleClaimDailyTreasure}
+              disabled={!dailyTreasure || dailyTreasure.claimed_today || claimingDailyTreasure}
+            >
+              {claimingDailyTreasure
+                ? "Claiming..."
+                : dailyTreasure?.claimed_today
+                  ? "Daily reward claimed"
+                  : `Claim daily reward · ${(dailyTreasure?.amount ?? DAILY_TREASURE_AMOUNT).toLocaleString()}`}
+            </button>
+            {nextRewardCountdown && (
+              <span className="home__reward-countdown" aria-live="off">
+                Next daily reward in {nextRewardCountdown}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            className="home__map-button"
+            onClick={() => navigate("/daily-question")}
+          >
+            Daily Question
+          </button>
+        </div>
 
       </header>
+
+      {(dailyTreasureError || refreshError) && (
+        <div className="home__header-feedback" role="status">
+          {dailyTreasureError && (
+            <p role="alert">Daily reward unavailable: {dailyTreasureError}</p>
+          )}
+          {refreshError && (
+            <p>Live player stats are temporarily unavailable: {refreshError}</p>
+          )}
+        </div>
+      )}
 
 
       {/* =====================================================
@@ -384,124 +434,87 @@ export default function HomePage() {
               Your territory awaits.
             </p>
 
+            <div className="home__season-note">
+              <span>SEASON FORMAT</span>
+              <strong>4 weeks · 28 days</strong>
+              <span>
+                {seasonDaysRemaining == null
+                  ? "Season dates loading"
+                  : `${seasonDaysRemaining} ${seasonDaysRemaining === 1 ? "day" : "days"} remaining · balances reset to zero at season end`}
+              </span>
+            </div>
+
           </div>
 
 
-          {/* =================================================
-              ACTIVE BATTLES
-          ================================================= */}
-
-          <section className="battles">
-
+          <section className="leaderboard">
             <div className="section-heading">
-
               <div>
                 <span className="section-heading__eyebrow">
-                  CONFLICT
+                  TREASURE THIS WEEK · ALL WORLD
                 </span>
-
-                <h2>Active Battles</h2>
+                <h2>Leaderboard</h2>
               </div>
-
               <button
                 className="section-action"
-                onClick={() => navigate("/map")}
+                onClick={() => navigate("/leaderboard")}
               >
-                <span>Propose Battle</span>
-                <span>+</span>
+                <span>All rankings</span>
+                <span>↗</span>
               </button>
-
             </div>
 
-
-            {refreshError && (
-              <p className="battles__refresh-error" role="status">
-                Live battle updates are temporarily unavailable: {refreshError}
-              </p>
-            )}
-
-            {battles.length === 0 ? (
-
-              <div className="battles__empty">
-
-                <span className="battles__empty-symbol">
-                  ◇
-                </span>
-
-                <p>
-                  {allBattles.length > 0
-                    ? "No active conflicts right now."
-                    : "No active conflicts yet."}
-                </p>
-
-                <button
-                  className="gold-button"
-                  onClick={() => navigate("/map")}
-                >
-                  {allBattles.length > 0 ? "Propose another battle" : "Propose your first battle"}
-                </button>
-
+            {leaderboardLoading ? (
+              <div className="leaderboard__state">Loading rankings...</div>
+            ) : leaderboardError ? (
+              <div className="leaderboard__state" role="alert">
+                Unable to load rankings.
               </div>
-
+            ) : leaderboard.length === 0 ? (
+              <div className="leaderboard__state">No rankings yet.</div>
             ) : (
-
-              <div className="battles__list">
-
-                {battles.map((battle, index) => (
-
-                  <div
-                    className="battle-row"
-                    key={battle.id}
-                  >
-
-                    <div className="battle-row__number">
-                      {String(index + 1).padStart(2, "0")}
-                    </div>
-
-                    <div className="battle-row__opponent">
-
-                      <span>VS</span>
-
-                      <strong>
-                        {battle.opponent}
-                      </strong>
-
-                      <small>
-                        {battle.cityName}
-                      </small>
-
-                    </div>
-
-                    <div className="battle-row__status">
-                      {battle.status === "pending"
-                        ? battle.direction === "incoming"
-                          ? "Awaiting your response"
-                          : "Awaiting opponent"
-                        : BATTLE_STATUS_LABEL[battle.status] ?? battle.status}
-                    </div>
-
-                    <button
-                      className="battle-row__arrow"
-                      onClick={() =>
-                        navigate(
-                          battle.status === "pending"
-                            ? `/map?panel=battles&city=${battle.cityDbId ?? ""}`
-                            : `/battle/${battle.id}`,
-                        )
-                      }
-                      aria-label={`Open battle against ${battle.opponent}`}
+              <div className="leaderboard__list">
+                {topTen.map((entry, index) => {
+                  const isCurrentUser =
+                    String(entry.user_id) === String(team.id) ||
+                    entry.username === team.username;
+                  return (
+                    <div
+                      key={entry.user_id}
+                      className={`leaderboard__row ${isCurrentUser ? "leaderboard__row--current" : ""}`}
                     >
-                      →
-                    </button>
-
-                  </div>
-
-                ))}
-
+                      <span className="leaderboard__rank">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="leaderboard__name">
+                        {entry.username}
+                      </span>
+                      <span className="leaderboard__treasure">
+                        {entry.treasure.toLocaleString()} ◈
+                      </span>
+                    </div>
+                  );
+                })}
+                {currentUserOutsideTopTen && (
+                  <>
+                    <div className="leaderboard__separator">
+                      <span />
+                      <small>YOUR POSITION</small>
+                      <span />
+                    </div>
+                    <div className="leaderboard__row leaderboard__row--current">
+                      <span className="leaderboard__rank">
+                        {String(currentUserRank).padStart(2, "0")}
+                      </span>
+                      <span className="leaderboard__name">{team.username}</span>
+                      <span className="leaderboard__treasure">
+                        {(leaderboard[currentUserIndex]?.treasure ?? 0).toLocaleString()} ◈
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
-
             )}
-
           </section>
 
 
@@ -510,6 +523,87 @@ export default function HomePage() {
           ================================================= */}
 
           <div className="home__lower">
+
+            <section className="battles">
+              <div className="section-heading section-heading--small">
+                <div>
+                  <span className="section-heading__eyebrow">THE ARENA</span>
+                  <h2>Current Battles</h2>
+                </div>
+                <button
+                  className="section-action"
+                  type="button"
+                  onClick={() => navigate("/map")}
+                >
+                  <span>Open world</span>
+                  <span>↗</span>
+                </button>
+              </div>
+
+              {currentBattles.length === 0 ? (
+                <div className="battles__empty">
+                  <p>You have no current battles.</p>
+                  <button
+                    className="gold-button"
+                    type="button"
+                    onClick={() => navigate("/map")}
+                  >
+                    Find a battle
+                  </button>
+                </div>
+              ) : (
+                <div className="battles__list">
+                  {currentBattles.map((battle, index) => {
+                    const incoming = battle.opponent_id === user.id;
+                    const opponentId = incoming
+                      ? battle.challenger_id
+                      : battle.opponent_id;
+                    const opponentName =
+                      ownerById.get(opponentId) ?? `Player ${opponentId}`;
+                    const cityName =
+                      cities.find((city) => city.id === battle.city_id)?.name ??
+                      "Unknown city";
+                    const battleStatus =
+                      battle.status === "accepted" ? "Accepted" : "Pending";
+
+                    return (
+                      <article className="home__battle-row" key={battle.id}>
+                        <span className="battle-row__number">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        <div className="home__battle-details">
+                          <strong>
+                            {incoming
+                              ? `${opponentName} challenged you`
+                              : `You challenged ${opponentName}`}
+                          </strong>
+                          <small>
+                            {cityName} · {formatTimestamp(battle.proposed_time)}
+                          </small>
+                        </div>
+                        <span
+                          className={`battle-row__status home__battle-status home__battle-status--${battle.status}`}
+                        >
+                          {battleStatus}
+                        </span>
+                        {battle.status === "accepted" ? (
+                          <button
+                            className="battle-row__arrow"
+                            type="button"
+                            aria-label={`Enter battle with ${opponentName}`}
+                            onClick={() => navigate(`/battle/${battle.id}`)}
+                          >
+                            ↗
+                          </button>
+                        ) : (
+                          <span className="home__battle-placeholder" />
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
 
             {/* -----------------------------------------------
                 CAMPUS ACTIVITY
@@ -553,158 +647,6 @@ export default function HomePage() {
 
             </section>
 
-
-            {/* -----------------------------------------------
-                LEADERBOARD
-            ----------------------------------------------- */}
-
-            <section className="leaderboard">
-
-              <div className="section-heading section-heading--small">
-
-                <div>
-                  <span className="section-heading__eyebrow">
-                    TREASURE THIS WEEK
-                  </span>
-
-                  <h2>Leaderboard</h2>
-                </div>
-
-              </div>
-
-
-              {leaderboardLoading ? (
-
-                <div className="leaderboard__state">
-                  Loading rankings...
-                </div>
-
-              ) : leaderboardError ? (
-
-                <div className="leaderboard__state">
-                  Unable to load rankings.
-                </div>
-
-              ) : leaderboard.length === 0 ? (
-
-                <div className="leaderboard__state">
-                  No rankings yet.
-                </div>
-
-              ) : (
-
-                <div className="leaderboard__list">
-
-                  {topTen.map((entry, index) => {
-
-                    const rank = index + 1;
-
-                    const isCurrentUser =
-                      String(entry.user_id) === String(team.id) ||
-                      entry.username === team.username;
-
-                    return (
-                      <div
-                        key={entry.user_id}
-                        className={`leaderboard__row ${
-                          isCurrentUser
-                            ? "leaderboard__row--current"
-                            : ""
-                        }`}
-                      >
-
-                        <span className="leaderboard__rank">
-                          {String(rank).padStart(2, "0")}
-                        </span>
-
-                        <span className="leaderboard__name">
-                          {entry.username}
-                        </span>
-
-                        <span className="leaderboard__treasure">
-                          {entry.treasure.toLocaleString()} ◈
-                        </span>
-
-                      </div>
-                    );
-                  })}
-
-
-                  {/* -----------------------------------------
-                      CURRENT USER OUTSIDE TOP 10
-                  ----------------------------------------- */}
-
-                  {currentUserOutsideTopTen && (
-                    <>
-                      <div className="leaderboard__separator">
-                        <span />
-                        <small>YOUR POSITION</small>
-                        <span />
-                      </div>
-
-                      <div className="leaderboard__row leaderboard__row--current leaderboard__row--self">
-
-                        <span className="leaderboard__rank">
-                          {String(currentUserRank).padStart(2, "0")}
-                        </span>
-
-                        <span className="leaderboard__name">
-                          {team.username}
-                        </span>
-
-                        <span className="leaderboard__treasure">
-                          {(leaderboard[currentUserIndex]?.treasure ?? 0).toLocaleString()} ◈
-                        </span>
-
-                      </div>
-                    </>
-                  )}
-
-                </div>
-
-              )}
-
-            </section>
-
-
-            {/* -----------------------------------------------
-                QUICK STATS
-            ----------------------------------------------- */}
-
-            <section className="territory">
-
-              <span className="section-heading__eyebrow">
-                YOUR DOMAIN
-              </span>
-
-              <div className="territory__stats">
-
-                <div>
-                  <strong>{team.citiesHeld}</strong>
-                  <span>Cities</span>
-                </div>
-
-                <div>
-                  <strong>{team.wins}</strong>
-                  <span>Victories</span>
-                </div>
-
-                <div>
-                  <strong>{team.streak}</strong>
-                  <span>Streak</span>
-                </div>
-
-              </div>
-
-              <button
-                className="territory__button"
-                onClick={() => navigate("/map")}
-              >
-                View territory
-                <span>↗</span>
-              </button>
-
-            </section>
 
           </div>
 
@@ -773,32 +715,6 @@ export default function HomePage() {
             </span>
 
           </div>
-
-          <div className="profile__daily-treasure">
-            <div>
-              <strong>Daily treasure</strong>
-              <span>
-                {dailyTreasure?.claimed_today
-                  ? "Today's treasure claimed"
-                  : `Claim ${DAILY_TREASURE_AMOUNT.toLocaleString()} treasure today`}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleClaimDailyTreasure}
-              disabled={!dailyTreasure || dailyTreasure.claimed_today || claimingDailyTreasure}
-            >
-              {claimingDailyTreasure
-                ? "Claiming..."
-                : dailyTreasure?.claimed_today
-                  ? "Claimed"
-                  : "Claim"}
-            </button>
-            {dailyTreasureError && (
-              <p role="alert">{dailyTreasureError}</p>
-            )}
-          </div>
-
 
           {/* Record */}
 
@@ -905,6 +821,7 @@ export default function HomePage() {
 
           <button
             className="profile__signout"
+            type="button"
             onClick={handleSignOut}
           >
             Sign out

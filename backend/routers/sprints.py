@@ -152,3 +152,53 @@ def get_my_sprints(
         for sprint in sprints:
             db.refresh(sprint)
     return sprints
+
+
+@router.post("/{sprint_id}/forfeit", response_model=SprintResponse)
+def forfeit_sprint(
+    sprint_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    sprint = (
+        db.query(Sprint)
+        .filter(Sprint.id == sprint_id)
+        .with_for_update()
+        .first()
+    )
+    if sprint is None:
+        raise HTTPException(status_code=404, detail="Sprint not found")
+
+    battle = (
+        db.query(Battle)
+        .filter(Battle.id == sprint.battle_id)
+        .with_for_update()
+        .first()
+    )
+    if battle is None:
+        raise HTTPException(status_code=404, detail="Battle not found")
+    if current_user.id not in (battle.challenger_id, battle.opponent_id):
+        raise HTTPException(status_code=403, detail="You're not part of this battle")
+    if sprint.status != "pending" or battle.status != "accepted":
+        raise HTTPException(status_code=409, detail="This battle is no longer active")
+
+    if _expire_sprint_if_due(sprint, battle):
+        db.commit()
+        db.refresh(sprint)
+        return sprint
+
+    winner_id = (
+        battle.opponent_id
+        if current_user.id == battle.challenger_id
+        else battle.challenger_id
+    )
+    _resolve_no_show(
+        battle,
+        sprint,
+        winner_id=winner_id,
+        loser_id=current_user.id,
+        db=db,
+    )
+    db.commit()
+    db.refresh(sprint)
+    return sprint

@@ -83,9 +83,24 @@ export const api = {
     apiFetch(`/sprints/${id}/run`, { method: "POST", body: { code } }),
   submitSprint: (id, code) =>
     apiFetch(`/sprints/${id}/submit`, { method: "POST", body: { code } }),
+  forfeitSprint: (id) =>
+    apiFetch(`/sprints/${id}/forfeit`, { method: "POST" }),
 
   weeklyLeaderboard: (limit = 20) =>
     apiFetch(`/leaderboard/weekly?limit=${limit}`),
   seasonLeaderboard: () => apiFetch("/leaderboard/season"),
+  leaderboard: (period = "weekly", world = "all", limit = 100) =>
+    apiFetch(
+      `/leaderboard/rankings?period=${encodeURIComponent(period)}&world=${encodeURIComponent(world)}&limit=${limit}`,
+    ),
+  dailyChallenge: () => apiFetch("/daily-challenges/today"),
+  runDailyChallenge: (code) =>
+    apiFetch("/daily-challenges/today/run", { method: "POST", body: { code } }),
+  submitDailyChallenge: (code) =>
+    apiFetch("/daily-challenges/today/submit", { method: "POST", body: { code } }),
+  forfeitDailyChallenge: () =>
+    apiFetch("/daily-challenges/today/forfeit", { method: "POST" }),
+  dailyChallengeLeaderboard: () =>
+    apiFetch("/daily-challenges/today/leaderboard"),
   recentBattles: () => apiFetch("/battles/recent"),
 };

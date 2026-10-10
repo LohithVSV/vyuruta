@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api";
+import { api, clearToken, setToken } from "../api";
 import "./AuthPage.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -88,7 +88,7 @@ export default function AuthPage() {
         throw new Error(profile.detail || "Could not load your account");
       }
 
-      localStorage.setItem("vyuruta_access_token", data.access_token);
+      setToken(data.access_token);
       const onboardingKey = `vyuruta_onboarding_seen_user:${profile.id}`;
       const faction =
         localStorage.getItem(`vyuruta_faction_user:${profile.id}`) || "fire";
@@ -146,6 +146,32 @@ export default function AuthPage() {
       if (!res.ok) {
         throw new Error(data.detail || "Could not create account");
       }
+
+      clearToken();
+      let loginData;
+      try {
+        const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: signup.email,
+            password: signup.password,
+          }),
+        });
+        loginData = await loginResponse.json();
+        if (!loginResponse.ok) {
+          throw new Error(loginData.detail || "Please log in.");
+        }
+      } catch (loginError) {
+        setLogin({ email: signup.email, password: signup.password });
+        setMode("login");
+        setError(
+          `Account created, but automatic sign-in failed: ${loginError.message}`,
+        );
+        return;
+      }
+
+      setToken(loginData.access_token);
       navigate("/reveal/fire/NEW-CITY", {
         state: { onboardingKey: `vyuruta_onboarding_seen_user:${data.id}` },
       });

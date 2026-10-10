@@ -311,20 +311,38 @@
    ENTER WORLD BUTTON
    ========================================================= */
 
-.home__map-button {
+.home__header-actions {
   position: absolute;
-
   right: 42px;
-
   display: flex;
   align-items: center;
+  gap: 10px;
+}
 
-  gap: 13px;
+.home__claim-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
 
+.home__reward-countdown {
+  color: var(--muted);
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.leaderboard-page > .home__topbar > .home__map-button,
+.daily-question-page > .home__topbar > .home__map-button {
+  position: absolute;
+  right: 42px;
+}
+
+.home__map-button,
+.home__claim-button {
   padding: 10px 15px;
-
   border: 1px solid rgba(91, 159, 196, 0.34);
-
   background:
     linear-gradient(
       100deg,
@@ -334,27 +352,26 @@
     rgba(8, 11, 12, 0.40);
 
   color: var(--text);
-
   font-family: "Inter", sans-serif;
-
   font-size: 0.7rem;
   font-weight: 600;
-
   letter-spacing: 0.12em;
-
   text-transform: uppercase;
-
   cursor: pointer;
-
   backdrop-filter: blur(7px);
-
   transition:
     background 180ms ease,
     border-color 180ms ease,
     box-shadow 180ms ease;
 }
 
-.home__map-button:hover {
+.home__claim-button {
+  border-color: rgba(201, 162, 75, 0.4);
+  color: #e9cf91;
+}
+
+.home__map-button:hover,
+.home__claim-button:hover:not(:disabled) {
   background:
     linear-gradient(
       100deg,
@@ -368,20 +385,22 @@
     0 0 22px rgba(60, 140, 185, 0.08);
 }
 
-.home__map-arrow {
-  color: var(--water);
-
-  font-size: 1rem;
-
-  transition:
-    color 180ms ease,
-    transform 180ms ease;
+.home__claim-button:disabled {
+  cursor: default;
+  opacity: 0.62;
 }
 
-.home__map-button:hover .home__map-arrow {
-  color: var(--water-bright);
+.home__header-feedback {
+  position: relative;
+  z-index: 2;
+  width: min(100% - 48px, 1330px);
+  margin: 10px auto 0;
+  color: #e89a83;
+  font-size: 0.68rem;
+}
 
-  transform: translate(2px, -2px);
+.home__header-feedback p + p {
+  margin-top: 5px;
 }
 
 
@@ -506,6 +525,34 @@
   letter-spacing: 0.01em;
 }
 
+.home__season-note {
+  display: grid;
+  gap: 5px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 20px;
+  padding: 11px 14px;
+  border-left: 2px solid var(--fire);
+  background: rgba(7, 11, 12, 0.42);
+}
+
+.home__season-note span:first-child {
+  color: var(--fire);
+  font-size: 0.53rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.home__season-note strong {
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.home__season-note span:last-child {
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
 
 /* =========================================================
    SECTION HEADING
@@ -538,10 +585,6 @@
 
 .activity .section-heading__eyebrow {
   color: var(--water);
-}
-
-.territory .section-heading__eyebrow {
-  color: var(--fire);
 }
 
 .leaderboard .section-heading__eyebrow {
@@ -790,14 +833,64 @@
 
 .home__lower {
   display: grid;
-
-  grid-template-columns:
-    1.2fr
-    1fr;
-
-  gap: 45px;
-
+  grid-template-columns: 1fr;
+  gap: 35px;
   margin-top: 55px;
+}
+
+.home__battle-row {
+  display: grid;
+  grid-template-columns: 35px minmax(0, 1fr) auto 35px;
+  align-items: center;
+  gap: 12px;
+  min-height: 74px;
+  border-top: 1px solid var(--line);
+  transition: background 180ms ease;
+}
+
+.home__battle-row:hover {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(201, 162, 75, 0.025),
+      rgba(91, 159, 196, 0.045)
+    );
+}
+
+.home__battle-details {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.home__battle-details strong {
+  overflow: hidden;
+  color: var(--text);
+  font-family: "Spectral", serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home__battle-details small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home__battle-status {
+  text-align: right;
+}
+
+.home__battle-status--accepted {
+  color: var(--water-bright);
+}
+
+.home__battle-placeholder {
+  width: 35px;
 }
 
 
@@ -869,106 +962,6 @@
   color: var(--muted);
 
   font-size: 0.6rem;
-}
-
-
-/* =========================================================
-   TERRITORY
-   ========================================================= */
-
-.territory__stats {
-  display: grid;
-
-  grid-template-columns: repeat(3, 1fr);
-
-  margin-top: 22px;
-
-  border-bottom: 1px solid var(--line);
-}
-
-.territory__stats div {
-  display: flex;
-
-  flex-direction: column;
-
-  padding-bottom: 20px;
-}
-
-.territory__stats div + div {
-  padding-left: 18px;
-
-  border-left: 1px solid var(--line);
-}
-
-.territory__stats strong {
-  font-family: "Spectral", serif;
-
-  color: var(--text);
-
-  font-size: 1.7rem;
-
-  font-weight: 500;
-}
-
-.territory__stats div:nth-child(1) strong {
-  color: var(--water);
-}
-
-.territory__stats div:nth-child(2) strong {
-  color: var(--fire);
-}
-
-.territory__stats div:nth-child(3) strong {
-  color: var(--text);
-}
-
-.territory__stats span {
-  margin-top: 2px;
-
-  color: var(--muted);
-
-  font-size: 0.56rem;
-
-  letter-spacing: 0.1em;
-
-  text-transform: uppercase;
-}
-
-.territory__button {
-  width: 100%;
-
-  display: flex;
-
-  justify-content: space-between;
-
-  padding: 17px 0;
-
-  border: 0;
-
-  background: transparent;
-
-  color: var(--muted);
-
-  font-size: 0.65rem;
-  font-weight: 600;
-
-  letter-spacing: 0.1em;
-
-  text-transform: uppercase;
-
-  cursor: pointer;
-
-  transition: color 180ms ease;
-}
-
-.territory__button span {
-  color: var(--water);
-
-  font-size: 1rem;
-}
-
-.territory__button:hover {
-  color: var(--text);
 }
 
 
@@ -1179,6 +1172,11 @@
       var(--water-glow),
       transparent 34%
     );
+}
+
+.home__profile > * {
+  position: relative;
+  z-index: 1;
 }
 
 
@@ -1637,12 +1635,11 @@
 
 /* =========================================================
    SECTION CARDS — unified gradient-border system
-   Used by: battles, activity, territory, leaderboard, profile
+   Used by: battles, activity, leaderboard, profile
    ========================================================= */
 
 .battles,
 .activity,
-.territory,
 .home__profile,
 .leaderboard {
   position: relative;
@@ -1664,8 +1661,7 @@
 }
 
 .battles::after,
-.activity::after,
-.territory::after {
+.activity::after {
   content: "";
 
   position: absolute;
@@ -1694,7 +1690,6 @@
 
 .battles > *,
 .activity > *,
-.territory > *,
 .leaderboard > * {
   position: relative;
   z-index: 1;
@@ -1748,10 +1743,47 @@
     width: 105px;
   }
 
-  .home__map-button {
+  .home__header-actions {
     right: 20px;
 
-    padding: 8px 11px;
+    gap: 6px;
+  }
+
+  .leaderboard-page > .home__topbar > .home__map-button,
+  .daily-question-page > .home__topbar > .home__map-button {
+    right: 20px;
+  }
+
+  .home__map-button,
+  .home__claim-button {
+    max-width: 34vw;
+    padding: 8px 9px;
+    font-size: 0.58rem;
+    line-height: 1.2;
+  }
+
+  .home__claim-button {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .home__reward-countdown {
+    max-width: 34vw;
+    font-size: 0.46rem;
+  }
+
+  .home__battle-row {
+    grid-template-columns: 28px minmax(0, 1fr) auto 28px;
+    gap: 8px;
+  }
+
+  .home__battle-details strong {
+    font-size: 0.82rem;
+  }
+
+  .home__battle-details small {
+    font-size: 0.56rem;
   }
 
   .home__content {
@@ -1842,12 +1874,29 @@
     width: 92px;
   }
 
-  .home__map-button {
+  .home__header-actions {
     right: 15px;
+    gap: 5px;
+  }
 
-    padding: 7px 9px;
-
+  .leaderboard-page > .home__topbar > .home__map-button,
+  .daily-question-page > .home__topbar > .home__map-button {
+    right: 15px;
+    padding: 7px 8px;
     font-size: 0.58rem;
+  }
+
+  .home__map-button,
+  .home__claim-button {
+    max-width: 42vw;
+    padding: 7px 8px;
+    font-size: 0.5rem;
+    letter-spacing: 0.04em;
+  }
+
+  .home__reward-countdown {
+    max-width: 42vw;
+    font-size: 0.42rem;
   }
 
   .home__content {
@@ -1857,10 +1906,6 @@
 
   .home__welcome h1 {
     font-size: 2.25rem;
-  }
-
-  .territory__stats strong {
-    font-size: 1.45rem;
   }
 
   .profile__character {

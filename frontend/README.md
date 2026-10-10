@@ -18,7 +18,7 @@ Campus DSA-battle strategy game. Solo build. Target: prove it on home campus (~3
 - **Game format v1:** DSA Sprint only (Debug Duel parked for post-pilot).
 - **Team profile:** name + banner, bio, member list, no lead role, unified event/history feed (claims/losses/wins/hosting) that doubles as the global activity feed.
 - **Weekly contest:** all teams compete together; winner gets 5% of campus-wide territory points for the week; 3-win streak → hosting rights (host sits out, curates from AI question pool).
-- **Season length:** 6-8 weeks.
+- **Season length:** 4 weeks (28 days); player treasure balances reset to zero at the end of each season.
 - **Auth:** none for pilot — friends-only trust.
 - **Question sourcing:** AI-generated + cached ahead of time, Codeforces metadata used only for calibration, classic CS problems rewritten, no LeetCode ever.
 - **Launch plan:** seed 4-5 teams from close friends, get a few cities claimed and a battle or two fought before opening signup.
@@ -49,21 +49,29 @@ TODO: add previews of the game map and code-battle mechanic (not done yet).
 
 **3. Home/dashboard page** (`src/pages/HomePage.jsx` + `.css`)
 Current layout:
-- Fixed top-left logo bar ("Vyuruta / Code to Conquer") + Map link, stays visible on scroll
-- Main content: Active Battles section (cards per battle, "+ Propose" button, empty state) + Recent Realm Activity feed
-- Right sidebar profile panel: faction avatar (`fire-character.png` / `water-character.png` from `src/assets/landing/` — one shared image per faction for now, per-user custom avatars planned later), username, college, faction badge, **stat grid (currency, cities held, win/loss record, streak) — this is the only place these stats are shown**, team-only history feed (separate from campus-wide feed), Sign Out button
+- Fixed top bar with Home, World, and Leaderboard navigation; daily reward claim and Daily Question actions
+- Main content: season countdown, weekly all-world leaderboard preview, Recent Realm Activity, and a domain summary with victories, defeats, and streak
+- Right sidebar profile panel: faction avatar (`fire-character.png` / `water-character.png` from `src/assets/landing/` — one shared image per faction for now, per-user custom avatars planned later), username, college, faction badge, currency, battle history, Sign Out button
 - Background: custom generated image (`src/assets/home/dashboard-bg.png`) — dark ruins/forest, faint fire embers left / water sparkles right, with a dark gradient overlay so panels (semi-transparent + blurred) stay readable on top
 - Connected to the FastAPI backend for the signed-in profile, cities, battles, sprint history, recent realm activity, and weekly leaderboard. Home data is loaded through `src/api.js`; profile wins/losses are derived from completed sprint records.
+
+**Leaderboard page** (`src/pages/LeaderboardPage.jsx`)
+- Full weekly or season-earned treasure rankings, filtered by All World, Fire World, or Water World.
+- Shows the current 28-day season dates and the zero-balance season reset rule.
+
+**Daily question** (`src/pages/DailyQuestionPage.jsx`)
+- Battle-style split question and Python editor, with run/submit, hidden-test judging, a 5,000-treasure solve reward, and an explicit give-up action.
+- Solving or forfeiting unlocks the date's separate leaderboard at `/daily-question/leaderboard`.
+- Daily questions and their sample/hidden stdin/stdout test cases are authored in `backend/seed_daily_problems.py`.
 
 **Design system** (carries forward to future pages):
 - Palette — bg `#12160F`, panels `#1B2118` (semi-transparent on Home), hairline `#2E3627`, parchment text `#E9E4D3`, muted text `#9CA38C`, gold accent `#C9A24B`, fire `#E1552E`, water `#2E8BC0`
 - Fonts — `Spectral` (serif, headings/stat numbers) + `Inter` (body)
 
-### Frontend — not built yet
+### Frontend — remaining
 - Backend endpoints are configurable with `VITE_API_URL` (defaults to `http://localhost:8000`).
 - Full Map page (`/map` stub route referenced in HomePage nav)
 - Battle proposal flow page (`/battle/new` stub route referenced in HomePage nav)
-- Daily challenge feature
 
 ---
 

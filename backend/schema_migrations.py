@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import DateTime, Integer, String, inspect, text
 
 from database import Base, engine
+from models.season import Season
 
 
 ADDITIONAL_COLUMNS = {
@@ -81,3 +82,12 @@ def initialize_database() -> None:
             connection.execute(text(
                 "INSERT INTO app_migrations (version) VALUES (2)"
             ))
+
+    from core.seasons import ensure_active_season
+    from database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        ensure_active_season(db)
+    finally:
+        db.close()

@@ -14,15 +14,21 @@ Campus DSA-battle strategy game. Solo build. Target: prove it on home campus (~3
 - **City assignment:** no unclaimed-zone conquest in v1. New team joining = auto-assigned one unclaimed city as their home. After that, ownership only changes via battle.
 - **Battle flow:** propose → accept/reject → both players check in. The challenger chooses Easy (default), Medium, or Difficult; the assigned question matches that tier. Easy questions focus on approachable fundamentals, Medium is around Two Sum/easy-medium, and Difficult stays medium to medium-hard. The coding timer starts when both players are present: 5 minutes for Easy, 10 for Medium, and 30 for Difficult. The first fully correct submission wins. If time expires before either solves it, the match is a draw with no reward, tribute, or city change. If one player checks in and the other misses the scheduled time plus a one-minute grace period, the present player wins by forfeit.
 - **Conquest/tribute:** after a coding battle loss, treasure is transferred automatically to the winner based on difficulty (up to the loser's available balance); both players can leave the result animation without waiting for a decision. XP and passive tax mechanics are shelved.
-- **Economy:** every player starts with 20,000 treasure and may claim 30,000 daily treasure once per UTC day. Battle rewards and leaderboard rankings use treasure; passive XP generation is shelved.
+- **Economy:** every player starts with 20,000 treasure and may claim 20,000 daily treasure once per UTC day. Battle rewards and leaderboard rankings use treasure; passive XP generation is shelved.
+- **Daily question:** seed one stdin/stdout coding problem per UTC date in `backend/seed_daily_problems.py`. Solving all sample and hidden cases awards 5,000 treasure; forfeiting awards nothing. Either terminal result unlocks that day's leaderboard.
 - **Battle history:** the dashboard lists recent battle treasure transfers won from or lost to other players. The map battle panel keeps active requests separate and limits its completed/closed history to the 10 most recent battles.
 - **Game format v1:** DSA Sprint only (Debug Duel parked for post-pilot).
 - **Team profile:** name + banner, bio, member list, no lead role, unified event/history feed (claims/losses/wins/hosting) that doubles as the global activity feed.
+- **Leaderboard:** rankings show treasure earned during the selected week or season, with All World, Fire World, and Water World scopes.
+- **Season length:** 4 weeks (28 days); when a season ends, every player's treasure balance resets to zero.
 - **Weekly contest:** all teams compete together; winner gets 5% of campus-wide territory points for the week; 3-win streak → hosting rights (host sits out, curates from AI question pool).
-- **Season length:** 6-8 weeks.
 - **Auth:** none for pilot — friends-only trust.
 - **Question sourcing:** AI-generated + cached ahead of time, Codeforces metadata used only for calibration, classic CS problems rewritten, no LeetCode ever.
 - **Launch plan:** seed 4-5 teams from close friends, get a few cities claimed and a battle or two fought before opening signup.
+
+## Daily question authoring
+
+Add a date-keyed entry to `backend/seed_daily_problems.py` with the title, slug, difficulty, prompt, topic names, and test cases. Each test case has stdin `input_data`, expected stdout `expected_output`, and `is_sample` to control whether players can see it. Run `python seed_daily_problems.py` from `backend/` to publish the question for that UTC date; rerunning skips dates that already have a published question.
 
 ## Still open / parked
 
@@ -64,7 +70,6 @@ Current layout:
 - Backend endpoints are configurable with `VITE_API_URL` (defaults to `http://localhost:8000`).
 - Territory map is available at `/map` and linked from the dashboard.
 - Battle proposal flow page (`/battle/new` stub route referenced in HomePage nav)
-- Daily challenge feature
 
 ---
 

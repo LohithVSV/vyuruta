@@ -1,0 +1,168 @@
+.daily-room__date,
+.daily-room__date span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.daily-room__date span {
+  color: #a9a69e;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.daily-room__date strong {
+  color: #e3ded4;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.daily-room__status {
+  color: #a9cba9;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.daily-room__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.daily-room .coding-room__actions {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.daily-room__buttons .coding-room__action-buttons {
+  width: auto;
+}
+
+.daily-room__leaderboard-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.daily-leaderboard {
+  position: relative;
+  z-index: 1;
+  width: min(100% - 40px, 900px);
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  margin: auto;
+  padding: 32px;
+  border: 1px solid rgba(224, 224, 215, 0.15);
+  border-radius: 15px;
+  background: rgba(8, 12, 15, 0.82);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(22px);
+}
+
+.daily-leaderboard__heading h1 {
+  margin-top: 6px;
+  color: #f4eee4;
+  font: 600 clamp(26px, 4vw, 38px) "Spectral", Georgia, serif;
+}
+
+.daily-leaderboard__heading p,
+.daily-leaderboard__empty {
+  margin-top: 8px;
+  color: #b3b3ac;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.daily-leaderboard__list {
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--arena-line);
+}
+
+.daily-leaderboard__row {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border-top: 1px solid var(--arena-line);
+}
+
+.daily-leaderboard__row.is-forfeited {
+  opacity: 0.68;
+}
+
+.daily-leaderboard__rank {
+  color: #f1bd70;
+  font: 600 15px "Spectral", Georgia, serif;
+  text-align: center;
+}
+
+.daily-leaderboard__name {
+  overflow: hidden;
+  color: #f2eee6;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-leaderboard__result {
+  color: #9cdbb4;
+  font-size: 11px;
+  text-align: right;
+}
+
+.daily-leaderboard__row.is-forfeited .daily-leaderboard__result {
+  color: #b3b3ac;
+}
+
+.daily-leaderboard__back {
+  margin-top: 22px;
+}
+
+@media (max-width: 700px) {
+  .daily-room .coding-room__topbar {
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  @media (max-width: 850px) {
+    .daily-room__buttons .coding-room__action-buttons {
+      width: 100%;
+    }
+  }
+
+  .daily-room .coding-room__schedule {
+    display: none;
+  }
+
+  .daily-room__date strong {
+    max-width: 140px;
+    text-align: right;
+  }
+
+  .daily-room__buttons .coding-room__action-buttons {
+    width: 100%;
+  }
+
+  .daily-leaderboard {
+    width: calc(100% - 28px);
+    padding: 22px 17px;
+  }
+
+  .daily-leaderboard__row {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 8px 10px;
+    padding: 10px 0;
+  }
+
+  .daily-leaderboard__result {
+    grid-column: 2;
+    text-align: left;
+  }
+}

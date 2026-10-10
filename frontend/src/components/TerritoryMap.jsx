@@ -535,7 +535,7 @@ function TerritoryMap({
           type="button"
           onClick={() => navigate("/home")}
         >
-          ← Return to home
+          Return to dashboard
         </button>
       </div>
       <form
@@ -681,7 +681,26 @@ function TerritoryMap({
         <button onClick={zoomIn}>+</button>
         <div className="zoom-level">{Math.round(view.z * 100)}%</div>
         <button onClick={zoomOut}>−</button>
-        <button className="reset-button" onClick={resetMap}>↺</button>
+        <button
+          className="reset-button"
+          type="button"
+          onClick={resetMap}
+          aria-label="Return map to your home city"
+          title="Return to your home city"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m3.5 10 8.5-7 8.5 7" />
+            <path d="M5.5 9v11h13V9M9.5 20v-6h5v6" />
+          </svg>
+        </button>
       </div>
 
       {!selectedCity && (

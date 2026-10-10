@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class LeaderboardEntry(BaseModel):
@@ -8,3 +9,11 @@ class LeaderboardEntry(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class LeaderboardResponse(BaseModel):
+    period: str
+    world: str
+    season_start: datetime
+    season_end: datetime
+    entries: list[LeaderboardEntry]

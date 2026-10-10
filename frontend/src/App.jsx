@@ -11,7 +11,10 @@ import TerritoryMap from "./components/TerritoryMap";
 import { api, getToken } from "./api";
 import AuthPage from "./pages/AuthPage";
 import CodingBattlePage from "./pages/CodingBattlePage";
+import DailyQuestionPage from "./pages/DailyQuestionPage";
+import DailyQuestionLeaderboardPage from "./pages/DailyQuestionLeaderboardPage";
 import HomePage from "./pages/HomePage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 import TestReveal from "./pages/TestReveal";
 
 const centered = {
@@ -179,6 +182,12 @@ export default function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/reveal/:element/:city" element={<TestReveal />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/daily-question" element={<DailyQuestionPage />} />
+        <Route
+          path="/daily-question/leaderboard"
+          element={<DailyQuestionLeaderboardPage />}
+        />
         <Route path="/battle/:battleId" element={<CodingBattlePage />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

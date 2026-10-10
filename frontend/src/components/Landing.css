@@ -332,10 +332,16 @@
 .map-frame {
   position: relative;
   overflow: hidden;
+  touch-action: pan-y;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
   box-shadow: 0 30px 70px rgba(0, 0, 0, 0.38);
+}
+
+.map-frame:focus-visible {
+  outline: 2px solid var(--jal);
+  outline-offset: 4px;
 }
 
 .map-frame::before {
@@ -350,9 +356,79 @@
   position: relative;
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 560px;
-  object-fit: cover;
+  height: min(56vw, 560px);
+  min-height: 240px;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.demo-arrow {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50%;
+  background: rgba(5, 10, 14, 0.72);
+  color: var(--text);
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.demo-arrow:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(5, 10, 14, 0.92);
+}
+
+.demo-arrow--previous {
+  left: 16px;
+}
+
+.demo-arrow--next {
+  right: 16px;
+}
+
+.demo-pagination {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 16px;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+}
+
+.demo-pagination__dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(5, 10, 14, 0.58);
+  cursor: pointer;
+}
+
+.demo-pagination__dot.is-active {
+  border-color: var(--text);
+  background: var(--text);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+.demo-arrow:focus-visible,
+.demo-pagination__dot:focus-visible {
+  outline: 2px solid var(--jal);
+  outline-offset: 3px;
 }
 
 
@@ -554,6 +630,29 @@
 
   .about-lead {
     font-size: 15px;
+  }
+
+  .map-image {
+    height: 62vw;
+    min-height: 190px;
+  }
+
+  .demo-arrow {
+    width: 36px;
+    height: 36px;
+    font-size: 25px;
+  }
+
+  .demo-arrow--previous {
+    left: 10px;
+  }
+
+  .demo-arrow--next {
+    right: 10px;
+  }
+
+  .demo-pagination {
+    bottom: 10px;
   }
 
   .about-card {
