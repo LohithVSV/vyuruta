@@ -29,17 +29,16 @@ Campus DSA-battle strategy game. Solo build. Target: prove it on home campus (~3
 2. City naming scheme
 3. Generation engine — parked, "think it later"
 4. Outreach one-pager
-5. Deployment host for FastAPI (Render/Railway/Fly.io — Vercel won't run FastAPI natively)
 
 ---
 
 ## Build status
 
 ### Backend
-- FastAPI backend is code-complete, runs locally (`uvicorn` + `/docs` work)
-- No real data yet, not deployed
+- FastAPI backend is deployed on Render at `https://vyuruta.onrender.com`
+- No production data seeded yet
 
-### Frontend — pages built
+### Frontend — deployed at `https://vyuruta.vercel.app`
 
 **1. AuthPage** (`src/pages/AuthPage.jsx` + `.css`)
 Login/Signup, two-step signup (email/password/college → username + Fire/Water faction pick). Routed via `App.jsx` (`/` → Landing, `/auth` → AuthPage).
@@ -70,7 +69,7 @@ Current layout:
 
 ### Frontend — remaining
 - Backend endpoints are configured with `VITE_API_URL`. Copy `.env.example` to `.env` for local development and set the variable in the frontend host's build environment for deployment.
-- For Vercel, use the `frontend` folder as the project root and set `VITE_API_URL` to the deployed backend URL. `vercel.json` rewrites app routes to `index.html` for React Router.
+- The production site is `https://vyuruta.vercel.app`. For Vercel, use the `frontend` folder as the project root and set `VITE_API_URL` to `https://vyuruta.onrender.com`, then redeploy after changing it. `vercel.json` rewrites app routes to `index.html` for React Router.
 - Full Map page (`/map` stub route referenced in HomePage nav)
 - Battle proposal flow page (`/battle/new` stub route referenced in HomePage nav)
 
@@ -78,9 +77,7 @@ Current layout:
 
 ## Next step
 
-Pick up with either:
-(a) wiring Home page to the local FastAPI backend, or
-(b) building the Map page or Battle proposal page next
+Verify the production signup/login flow and core API-backed features using the deployed frontend and backend, then invite a small pilot group.
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.

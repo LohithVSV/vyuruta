@@ -23,7 +23,8 @@ app.add_middleware(
     allow_origins=[
         o.strip()
         for o in os.getenv(
-            "FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+            "FRONTEND_ORIGINS",
+            "https://vyuruta.vercel.app,http://localhost:5173,http://127.0.0.1:5173",
         ).split(",")
     ],
     allow_credentials=True,

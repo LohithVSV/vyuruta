@@ -30,13 +30,15 @@ Campus DSA-battle strategy game. Solo build. Target: prove it on home campus (~3
 
 Add a date-keyed entry to `backend/seed_daily_problems.py` with the title, slug, difficulty, prompt, topic names, and test cases. Each test case has stdin `input_data`, expected stdout `expected_output`, and `is_sample` to control whether players can see it. Run `python seed_daily_problems.py` from `backend/` to publish the question for that UTC date; rerunning skips dates that already have a published question.
 
-## Backend secrets and Render health checks
+## Deployment
 
 The backend requires `DATABASE_URL` and `SECRET_KEY` as environment variables. For local development, copy `backend/.env.example` to `backend/.env`, set the database URL, and replace the secret placeholder with a unique random value. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"` from the backend environment. The backend refuses to start if the secret is missing, too short, or still a placeholder. Never commit `.env`.
 
-Set the same variables in the Render service's environment settings. Rotating `SECRET_KEY` invalidates existing login tokens, so users will need to sign in again.
+The production frontend is deployed at `https://vyuruta.vercel.app` and the backend at `https://vyuruta.onrender.com`. Set `DATABASE_URL`, `SECRET_KEY`, and `FRONTEND_ORIGINS` in the Render service's environment settings. `FRONTEND_ORIGINS` should include `https://vyuruta.vercel.app`; include the localhost origins too if you use the local Vite frontend. The backend defaults allow both the deployed frontend and local development. Rotating `SECRET_KEY` invalidates existing login tokens, so users will need to sign in again.
 
-The optional GitHub Actions workflow at `.github/workflows/render-health-check.yml` pings `/health` every five minutes to keep a Render free web service awake. To enable it, add a repository variable named `RENDER_BACKEND_URL` with the backend's base URL (for example, `https://your-service.onrender.com`). Keeping a free instance awake consumes its monthly free instance hours continuously (about 720 hours per month); Render's free allowance is 750 hours per workspace, shared across services. Without the variable, the workflow fails with setup instructions.
+In Vercel, use `frontend` as the project root and set the build environment variable `VITE_API_URL` to `https://vyuruta.onrender.com`, then redeploy after changing it. The frontend's `vercel.json` rewrites app routes to `index.html` for React Router.
+
+UptimeRobot monitors the Render backend at `/health` every five minutes. The optional GitHub Actions workflow at `.github/workflows/render-health-check.yml` can provide an additional check; if enabled, set the repository variable `RENDER_BACKEND_URL` to `https://vyuruta.onrender.com`. Keeping a Render free instance awake consumes its monthly free instance hours continuously (about 720 hours per month); Render's free allowance is 750 hours per workspace, shared across services.
 
 ## Still open / parked
 
@@ -44,17 +46,16 @@ The optional GitHub Actions workflow at `.github/workflows/render-health-check.y
 2. City naming scheme
 3. Generation engine — parked, "think it later"
 4. Outreach one-pager
-5. Deployment host for FastAPI (Render/Railway/Fly.io — Vercel won't run FastAPI natively)
 
 ---
 
 ## Build status
 
 ### Backend
-- FastAPI backend is code-complete, runs locally (`uvicorn` + `/docs` work)
-- No real data yet, not deployed
+- FastAPI backend is deployed on Render (`https://vyuruta.onrender.com`; `/health` and `/docs` are available)
+- No production data seeded yet
 
-### Frontend — pages built
+### Frontend — deployed at `https://vyuruta.vercel.app`
 
 **1. AuthPage** (`src/pages/AuthPage.jsx` + `.css`)
 Login/Signup, two-step signup (email/password/college → username + Fire/Water faction pick). Routed via `App.jsx` (`/auth` → AuthPage); successful login opens `/home`, and signup runs the onboarding reveal before opening `/home`.
@@ -74,8 +75,8 @@ Current layout:
 - Palette — bg `#12160F`, panels `#1B2118` (semi-transparent on Home), hairline `#2E3627`, parchment text `#E9E4D3`, muted text `#9CA38C`, gold accent `#C9A24B`, fire `#E1552E`, water `#2E8BC0`
 - Fonts — `Spectral` (serif, headings/stat numbers) + `Inter` (body)
 
-### Frontend — not built yet
-- Backend endpoints are configurable with `VITE_API_URL` (defaults to `http://localhost:8000`).
+### Frontend — remaining
+- Backend endpoints are configured with `VITE_API_URL` (see `frontend/.env.example` for the deployed backend URL).
 - Territory map is available at `/map` and linked from the dashboard.
 - Battle proposal flow page (`/battle/new` stub route referenced in HomePage nav)
 
@@ -83,8 +84,6 @@ Current layout:
 
 ## Next step
 
-Pick up with either:
-(a) wiring Home page to the local FastAPI backend, or
-(b) building the Map page or Battle proposal page next
+Verify the production signup/login flow and core API-backed features using the deployed frontend and backend, then invite a small pilot group.
 
 username tho kuda search chheyyachu cities ni
