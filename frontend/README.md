@@ -69,7 +69,8 @@ Current layout:
 - Fonts — `Spectral` (serif, headings/stat numbers) + `Inter` (body)
 
 ### Frontend — remaining
-- Backend endpoints are configurable with `VITE_API_URL` (defaults to `http://localhost:8000`).
+- Backend endpoints are configured with `VITE_API_URL`. Copy `.env.example` to `.env` for local development and set the variable in the frontend host's build environment for deployment.
+- For Vercel, use the `frontend` folder as the project root and set `VITE_API_URL` to the deployed backend URL. `vercel.json` rewrites app routes to `index.html` for React Router.
 - Full Map page (`/map` stub route referenced in HomePage nav)
 - Battle proposal flow page (`/battle/new` stub route referenced in HomePage nav)
 

@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, clearToken, setToken } from "../api";
+import { api, clearToken, getApiBaseUrl, setToken } from "../api";
 import "./AuthPage.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -71,7 +69,7 @@ export default function AuthPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      const res = await fetch(`${getApiBaseUrl()}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(login),
@@ -80,7 +78,7 @@ export default function AuthPage() {
       if (!res.ok) {
         throw new Error(data.detail || "Invalid credentials");
       }
-      const profileResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+      const profileResponse = await fetch(`${getApiBaseUrl()}/auth/me`, {
         headers: { Authorization: `Bearer ${data.access_token}` },
       });
       const profile = await profileResponse.json();
@@ -137,7 +135,7 @@ export default function AuthPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+      const res = await fetch(`${getApiBaseUrl()}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(signup),
@@ -150,7 +148,7 @@ export default function AuthPage() {
       clearToken();
       let loginData;
       try {
-        const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+        const loginResponse = await fetch(`${getApiBaseUrl()}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

@@ -1,5 +1,5 @@
 // One place for every backend call. Import { api } and use api.me(), api.cities(), etc.
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+export const API_BASE_URL = import.meta.env.VITE_API_URL;
 const TOKEN_KEY = "vyuruta_access_token";
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
@@ -11,6 +11,13 @@ export class ApiError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+export function getApiBaseUrl() {
+  if (!API_BASE_URL) {
+    throw new ApiError("VITE_API_URL is not configured.", 0);
+  }
+  return API_BASE_URL.replace(/\/+$/, "");
 }
 
 function errorMessage(data, fallback) {
@@ -29,7 +36,7 @@ export async function apiFetch(path, { method = "GET", body, auth = true } = {})
 
   let res;
   try {
-    res = await fetch(`${API_BASE_URL}${path}`, {
+    res = await fetch(`${getApiBaseUrl()}${path}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
