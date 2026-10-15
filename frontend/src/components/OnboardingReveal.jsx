@@ -6,9 +6,8 @@ import logo from "../assets/landing/logo.png";
 import revealMusic from "../assets/audio/onboarding-music.mp3";
 
 // element: "fire" | "water"
-// cityName: e.g. "AGNI-023"
 // onComplete: callback fired when sequence ends (or skipped)
-export default function OnboardingReveal({ element, cityName, onComplete }) {
+export default function OnboardingReveal({ element, onComplete }) {
   const [beat, setBeat] = useState(0);
   const [exiting, setExiting] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
@@ -17,12 +16,20 @@ export default function OnboardingReveal({ element, cityName, onComplete }) {
 
   const EXIT_DURATION = 700; // ms, must match CSS transition below
 
+  const factionLine =
+    element === "fire"
+      ? "Forged in flame. Impossible to extinguish."
+      : "Born of the tide. Impossible to stop.";
+
   const beats = [
-    { text: "The old campus wars ended. New ones began.", duration: 5000 },
-    { text: "No swords. No armies. Just code, and the will to conquer.", duration: 5200 },
-    { type: "throne", duration: 3500 },
-    { text: "You have ascended.", duration: 3800 },
-    { type: "city", duration: 4200 },
+    { text: "Once, empires fell by the sword. Today, they fall by the keyboard.", duration: 5200 },
+    { text: "No armies. No mercy. Just code, and the will to conquer.", duration: 5000 },
+    { text: "Two factions. One world. Only the sharpest minds will rule it.", duration: 5200 },
+    { type: "throne", duration: 3800 },
+    { text: factionLine, duration: 4200 },
+    { text: "The throne has been waiting. Now it knows your name.", duration: 4600 },
+    { text: "The whole world is watching. Show them what you are made of.", duration: 4200 },
+    { text: "Your legend starts now.", duration: 3200 },
     { type: "brand", duration: 3200 },
   ];
 
@@ -131,13 +138,6 @@ export default function OnboardingReveal({ element, cityName, onComplete }) {
               </div>
             )}
             <div className="throne-vignette" />
-          </div>
-        )}
-
-        {current.type === "city" && (
-          <div className="city-reveal">
-            <p className="city-sub">YOUR CITY</p>
-            <h1 className="city-name">{cityName} IS YOURS</h1>
           </div>
         )}
 
