@@ -8,3 +8,5 @@ from models.problem import Problem
 from models.testcase import TestCase
 from models.reward_log import RewardLog
 from models.quick_play import QuickPlayLock, QuickPlayQueue
+from models.daily_challenge import DailyChallenge, DailyAttempt
+from models.season import Season

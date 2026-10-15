@@ -1,11 +1,13 @@
-"""
-Problem set for Academic Guild Wars. Run from backend/:  python seed_problems.py
-difficulty: 1 = easy, 2 = medium, 3 = difficult (medium to medium-hard)
-All problems read from stdin and print to stdout (see each description).
+"""Seed the shared normal-battle and Quick Play problem bank.
+
+Run from backend/: python seed_problems.py
+Difficulty: 1 = easy, 2 = medium, 3 = upper-medium.
+All problems read from stdin and print to stdout.
 """
 from database import SessionLocal
 from models.problem import Problem
 from models.testcase import TestCase
+from expanded_problem_bank import EXPANDED_PROBLEMS
 
 PROBLEMS = [
     {
@@ -234,10 +236,42 @@ PROBLEMS = [
     },
 ]
 
+ALL_PROBLEMS = [*PROBLEMS, *EXPANDED_PROBLEMS]
+EXPECTED_DIFFICULTY_COUNTS = {1: 50, 2: 30, 3: 20}
+
+
+def validate_problem_bank() -> None:
+    slugs = [problem["slug"] for problem in ALL_PROBLEMS]
+    if len(slugs) != len(set(slugs)):
+        raise ValueError("Problem bank contains duplicate slugs.")
+
+    counts = {
+        difficulty: sum(
+            problem["difficulty"] == difficulty for problem in ALL_PROBLEMS
+        )
+        for difficulty in EXPECTED_DIFFICULTY_COUNTS
+    }
+    if counts != EXPECTED_DIFFICULTY_COUNTS:
+        raise ValueError(
+            f"Expected difficulty counts {EXPECTED_DIFFICULTY_COUNTS}, got {counts}."
+        )
+
+    for problem in ALL_PROBLEMS:
+        if problem["difficulty"] not in EXPECTED_DIFFICULTY_COUNTS:
+            raise ValueError(f"Invalid difficulty for {problem['slug']}.")
+        if len(problem["test_cases"]) < 3:
+            raise ValueError(f"{problem['slug']} needs at least three test cases.")
+        if not any(case["is_sample"] for case in problem["test_cases"]):
+            raise ValueError(f"{problem['slug']} needs at least one sample test.")
+        if not any(not case["is_sample"] for case in problem["test_cases"]):
+            raise ValueError(f"{problem['slug']} needs at least one hidden test.")
+
+
 def seed():
+    validate_problem_bank()
     db = SessionLocal()
     try:
-        for p in PROBLEMS:
+        for p in ALL_PROBLEMS:
             existing = db.query(Problem).filter(Problem.slug == p["slug"]).first()
             if existing:
                 if existing.difficulty != p["difficulty"]:

@@ -1,15 +1,23 @@
-from database import Base, engine
-from models.user import User
-from models.city import City
-from models.battle import Battle
-from models.sprint import Sprint
-from models.tribute import Tribute
-from models.problem import Problem
-from models.testcase import TestCase
-from models.reward_log import RewardLog
+from sqlalchemy import text
 
-print("Dropping all tables...")
+from database import Base, engine
+import models  # Register every model and its foreign-key dependencies.
+from schema_migrations import initialize_database
+
+
+confirmation = input(
+    "This permanently deletes all Vyuruta app data in the configured database. "
+    "Type RESET to continue: "
+)
+if confirmation != "RESET":
+    print("Reset cancelled.")
+    raise SystemExit(1)
+
+print("Dropping all Vyuruta application tables...")
 Base.metadata.drop_all(bind=engine)
-print("Creating all tables fresh...")
-Base.metadata.create_all(bind=engine)
-print("Done! All tables recreated from current models.")
+with engine.begin() as connection:
+    connection.execute(text("DROP TABLE IF EXISTS app_migrations"))
+
+print("Recreating tables and initializing a clean schema...")
+initialize_database()
+print("Done! All Vyuruta application tables were recreated.")
