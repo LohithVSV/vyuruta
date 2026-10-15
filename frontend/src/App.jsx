@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import Landing from "./components/Landing";
 import TerritoryMap from "./components/TerritoryMap";
-import { api, getToken } from "./api";
+import { api, clearToken, getToken } from "./api";
 import AuthPage from "./pages/AuthPage";
 import CodingBattlePage from "./pages/CodingBattlePage";
 import DailyQuestionPage from "./pages/DailyQuestionPage";
@@ -40,10 +40,14 @@ function formatBattles(battles, cities, userId) {
     return {
       ...battle,
       direction: outgoing ? "outgoing" : "incoming",
+      matchType: battle.match_type,
       opponent:
         cities.find((entry) => String(entry.owner_id) === String(opponentId))
           ?.owner_username ?? `Player ${opponentId}`,
-      cityName: city?.name ?? "Unknown city",
+      cityName:
+        battle.match_type === "quick_play"
+          ? "Quick Play"
+          : city?.name ?? "Unknown city",
     };
   });
 }
@@ -171,7 +175,39 @@ function MapPage() {
 
 function LandingPage() {
   const navigate = useNavigate();
+  if (getToken()) return <Navigate to="/home" replace />;
   return <Landing onGetStarted={() => navigate("/auth")} />;
+}
+
+function HomeRoute() {
+  const [status, setStatus] = useState(() =>
+    getToken() ? "checking" : "unauthenticated",
+  );
+
+  useEffect(() => {
+    if (!getToken()) return undefined;
+
+    let cancelled = false;
+    api.me({ redirectOnUnauthorized: false })
+      .then(() => {
+        if (!cancelled) setStatus("authenticated");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        clearToken();
+        setStatus("unauthenticated");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (status === "unauthenticated") return <Navigate to="/" replace />;
+  if (status === "checking") {
+    return <div style={centered} role="status">Checking your session...</div>;
+  }
+  return <HomePage />;
 }
 
 export default function App() {
@@ -181,7 +217,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/reveal/:element/:city" element={<TestReveal />} />
-        <Route path="/home" element={<HomePage />} />
+        <Route path="/home" element={<HomeRoute />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/daily-question" element={<DailyQuestionPage />} />
         <Route

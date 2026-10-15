@@ -23,6 +23,7 @@ class BattleResponse(BaseModel):
     opponent_id: int
     city_id: int
     difficulty: int
+    match_type: str = "challenge"
     proposed_time: datetime
     status: str
     challenger_joined_at: datetime | None = None

@@ -191,7 +191,11 @@ def get_recent_battles(
     return [
         RecentBattleActivity(
             id=battle.id,
-            text=f"{battle.challenger.username} challenged {battle.opponent.username} for {battle.city.name}",
+            text=(
+                f"{battle.challenger.username} matched with {battle.opponent.username} in Quick Play"
+                if battle.match_type == "quick_play"
+                else f"{battle.challenger.username} challenged {battle.opponent.username} for {battle.city.name}"
+            ),
             created_at=battle.created_at,
         )
         for battle in battles

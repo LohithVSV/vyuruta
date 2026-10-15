@@ -1,6 +1,6 @@
 // src/pages/HomePage.jsx
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import fireCharacter from "../assets/landing/fire-character.png";
@@ -8,6 +8,7 @@ import waterCharacter from "../assets/landing/water-character.png";
 import vyurutaLogo from "../assets/landing/logo.png";
 
 import { api, clearToken, getToken } from "../api";
+import QuickPlayDialog from "../components/QuickPlayDialog";
 
 import "./HomePage.css";
 
@@ -51,6 +52,7 @@ export default function HomePage() {
   const [claimingDailyTreasure, setClaimingDailyTreasure] = useState(false);
   const [treasureHistory, setTreasureHistory] = useState([]);
   const [treasureHistoryError, setTreasureHistoryError] = useState("");
+  const [quickPlayOpen, setQuickPlayOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -196,6 +198,11 @@ export default function HomePage() {
       ),
     [dashboard],
   );
+
+  const handleQuickPlayMatch = useCallback((battleId) => {
+    setQuickPlayOpen(false);
+    navigate(`/battle/${battleId}`);
+  }, [navigate]);
 
   if (loadError) {
     return (
@@ -384,11 +391,24 @@ export default function HomePage() {
           </div>
           <button
             type="button"
+            className="home__map-button quick-play-trigger"
+            onClick={() => setQuickPlayOpen(true)}
+          >
+            Quick Play
+          </button>
+          <button
+            type="button"
             className="home__map-button"
             onClick={() => navigate("/daily-question")}
           >
             Daily Question
           </button>
+          {quickPlayOpen && (
+            <QuickPlayDialog
+              onClose={() => setQuickPlayOpen(false)}
+              onMatch={handleQuickPlayMatch}
+            />
+          )}
         </div>
 
       </header>
@@ -560,9 +580,12 @@ export default function HomePage() {
                       : battle.opponent_id;
                     const opponentName =
                       ownerById.get(opponentId) ?? `Player ${opponentId}`;
+                    const quickPlay = battle.match_type === "quick_play";
                     const cityName =
-                      cities.find((city) => city.id === battle.city_id)?.name ??
-                      "Unknown city";
+                      quickPlay
+                        ? `${["", "Easy", "Medium", "Difficult"][battle.difficulty] ?? "Quick Play"} · Quick Play`
+                        : cities.find((city) => city.id === battle.city_id)?.name ??
+                          "Unknown city";
                     const battleStatus =
                       battle.status === "accepted" ? "Accepted" : "Pending";
 
@@ -573,9 +596,11 @@ export default function HomePage() {
                         </span>
                         <div className="home__battle-details">
                           <strong>
-                            {incoming
-                              ? `${opponentName} challenged you`
-                              : `You challenged ${opponentName}`}
+                            {quickPlay
+                              ? `Matched with ${opponentName}`
+                              : incoming
+                                ? `${opponentName} challenged you`
+                                : `You challenged ${opponentName}`}
                           </strong>
                           <small>
                             {cityName} · {formatTimestamp(battle.proposed_time)}

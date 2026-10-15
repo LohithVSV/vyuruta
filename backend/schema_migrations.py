@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import DateTime, Integer, String, inspect, text
 
 from database import Base, engine
+from models.quick_play import QuickPlayLock
 from models.season import Season
 
 
@@ -11,6 +12,7 @@ ADDITIONAL_COLUMNS = {
         "challenger_joined_at": DateTime(timezone=True),
         "opponent_joined_at": DateTime(timezone=True),
         "match_started_at": DateTime(timezone=True),
+        "match_type": String(),
         "tribute_choice": String(),
         "tribute_amount": Integer(),
     },
@@ -29,6 +31,11 @@ ADDITIONAL_COLUMNS = {
 def initialize_database() -> None:
     Base.metadata.create_all(bind=engine)
     with engine.begin() as connection:
+        connection.execute(text(
+            "INSERT INTO quick_play_locks (id) VALUES (1) "
+            "ON CONFLICT (id) DO NOTHING"
+        ))
+    with engine.begin() as connection:
         inspector = inspect(connection)
         for table_name, columns in ADDITIONAL_COLUMNS.items():
             existing = {column["name"] for column in inspector.get_columns(table_name)}
@@ -38,6 +45,9 @@ def initialize_database() -> None:
                     connection.execute(text(
                         f"ALTER TABLE {table_name} ADD COLUMN {column_name} {rendered_type}"
                     ))
+        connection.execute(text(
+            "UPDATE battles SET match_type = 'challenge' WHERE match_type IS NULL"
+        ))
 
         connection.execute(text(
             "CREATE TABLE IF NOT EXISTS app_migrations "

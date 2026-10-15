@@ -16,6 +16,7 @@ Campus DSA-battle strategy game. Solo build. Target: prove it on home campus (~3
 - **Conquest/tribute:** after a coding battle loss, treasure is transferred automatically to the winner based on difficulty (up to the loser's available balance); both players can leave the result animation without waiting for a decision. XP and passive tax mechanics are shelved.
 - **Economy:** every player starts with 20,000 treasure and may claim 20,000 daily treasure once per UTC day. Battle rewards and leaderboard rankings use treasure; passive XP generation is shelved.
 - **Daily question:** seed one stdin/stdout coding problem per UTC date in `backend/seed_daily_problems.py`. Solving all sample and hidden cases awards 5,000 treasure; forfeiting awards nothing. Either terminal result unlocks that day's leaderboard.
+- **Quick Play:** players enter a short-lived, difficulty-specific matchmaking queue; two players at the same level are paired into a coding battle with a question selected from that difficulty.
 - **Battle history:** the dashboard lists recent battle treasure transfers won from or lost to other players. The map battle panel keeps active requests separate and limits its completed/closed history to the 10 most recent battles.
 - **Game format v1:** DSA Sprint only (Debug Duel parked for post-pilot).
 - **Team profile:** name + banner, bio, member list, no lead role, unified event/history feed (claims/losses/wins/hosting) that doubles as the global activity feed.

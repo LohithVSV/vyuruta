@@ -14,6 +14,7 @@ class Battle(Base):
     city_id = Column(Integer, ForeignKey("cities.id"), nullable=False)
 
     difficulty = Column(Integer, nullable=False, default=1)  # 1=easy 2=medium 3=hard, set by challenger
+    match_type = Column(String, nullable=False, default="challenge", server_default="challenge")
 
     proposed_time = Column(DateTime(timezone=True), nullable=False)
     challenger_joined_at = Column(DateTime(timezone=True), nullable=True)
