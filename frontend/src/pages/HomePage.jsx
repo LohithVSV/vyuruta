@@ -370,6 +370,20 @@ export default function HomePage() {
         </nav>
 
         <div className="home__header-actions">
+          <button
+            type="button"
+            className="home__map-button quick-play-trigger"
+            onClick={() => setQuickPlayOpen(true)}
+          >
+            Quick Play
+          </button>
+          <button
+            type="button"
+            className="home__map-button"
+            onClick={() => navigate("/daily-question")}
+          >
+            Daily Question
+          </button>
           <div className="home__claim-group">
             <button
               type="button"
@@ -389,20 +403,6 @@ export default function HomePage() {
               </span>
             )}
           </div>
-          <button
-            type="button"
-            className="home__map-button quick-play-trigger"
-            onClick={() => setQuickPlayOpen(true)}
-          >
-            Quick Play
-          </button>
-          <button
-            type="button"
-            className="home__map-button"
-            onClick={() => navigate("/daily-question")}
-          >
-            Daily Question
-          </button>
           {quickPlayOpen && (
             <QuickPlayDialog
               onClose={() => setQuickPlayOpen(false)}

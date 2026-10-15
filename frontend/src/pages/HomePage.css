@@ -160,7 +160,7 @@
   position: relative;
   z-index: 10;
 
-  height: 92px;
+  height: 120px;
 
   display: flex;
   align-items: center;
@@ -313,10 +313,12 @@
 
 .home__header-actions {
   position: absolute;
+  top: 8px;
   right: 42px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: max-content max-content;
+  justify-items: end;
+  gap: 6px 10px;
 }
 
 .home__claim-group {
@@ -324,6 +326,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 5px;
+  grid-column: 1 / -1;
 }
 
 .home__reward-countdown {
@@ -1870,16 +1873,20 @@
 
 @media (max-width: 600px) {
   .home__topbar {
-    height: 100px;
+    height: 116px;
   }
 
   .home__header-actions {
     top: 9px;
     right: 15px;
     width: calc(100% - 130px);
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    grid-template-columns: max-content max-content;
+    justify-content: end;
     gap: 5px;
+  }
+
+  .home__claim-group {
+    grid-column: 1 / -1;
   }
 
   .home__reward-countdown {
@@ -2185,7 +2192,7 @@
   }
 
   .home__topbar {
-    height: 75px;
+    height: 120px;
 
     padding: 0 20px;
   }
@@ -2198,9 +2205,10 @@
   }
 
   .home__header-actions {
+    top: 8px;
     right: 20px;
-
-    gap: 6px;
+    grid-template-columns: max-content max-content;
+    gap: 5px;
   }
 
   .leaderboard-page > .home__topbar > .home__map-button,
@@ -2330,6 +2338,7 @@
 
   .home__header-actions {
     right: 15px;
+    grid-template-columns: max-content max-content;
     gap: 5px;
   }
 
