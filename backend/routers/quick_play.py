@@ -45,17 +45,20 @@ def _remove_stale_entries(db: Session, now) -> None:
     ).delete(synchronize_session=False)
 
 
+# CHANGED: only an active quick-play match makes a waiting player ineligible.
+# Normal (pending/accepted) city battles no longer block quick play.
 def _remove_ineligible_entries(db: Session) -> None:
-    has_active_battle = db.query(Battle.id).filter(
+    has_active_quick_play = db.query(Battle.id).filter(
         or_(
             Battle.challenger_id == QuickPlayQueue.user_id,
             Battle.opponent_id == QuickPlayQueue.user_id,
         ),
         Battle.status.in_(ACTIVE_BATTLE_STATUSES),
+        Battle.match_type == "quick_play",
     ).exists()
     db.query(QuickPlayQueue).filter(
         QuickPlayQueue.status == "waiting",
-        has_active_battle,
+        has_active_quick_play,
     ).delete(synchronize_session=False)
 
 
@@ -65,6 +68,7 @@ def _online_count(db: Session) -> int:
     ).count()
 
 
+# CHANGED: only looks at quick-play battles now.
 def _active_battle(db: Session, user_id: int):
     return (
         db.query(Battle)
@@ -74,6 +78,7 @@ def _active_battle(db: Session, user_id: int):
                 Battle.opponent_id == user_id,
             ),
             Battle.status.in_(ACTIVE_BATTLE_STATUSES),
+            Battle.match_type == "quick_play",
         )
         .order_by(Battle.created_at.desc())
         .first()
@@ -201,10 +206,11 @@ def join_queue(
         db.delete(own_entry)
         own_entry = None
 
+    # CHANGED: message updated, and the check now only catches quick-play matches.
     if _active_battle(db, current_user.id):
         raise HTTPException(
             status_code=409,
-            detail="Finish your current battle before starting Quick Play.",
+            detail="Finish your current Quick Play match first.",
         )
 
     problem = pick_random_problem(db, difficulty=payload.difficulty)
