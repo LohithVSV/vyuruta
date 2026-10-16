@@ -403,12 +403,6 @@ export default function HomePage() {
               </span>
             )}
           </div>
-          {quickPlayOpen && (
-            <QuickPlayDialog
-              onClose={() => setQuickPlayOpen(false)}
-              onMatch={handleQuickPlayMatch}
-            />
-          )}
         </div>
 
       </header>
@@ -855,6 +849,15 @@ export default function HomePage() {
         </aside>
 
       </main>
+
+      {/* Quick Play dialog: direct child of .home so position: fixed
+          centers it on the screen (not inside any transformed parent) */}
+      {quickPlayOpen && (
+        <QuickPlayDialog
+          onClose={() => setQuickPlayOpen(false)}
+          onMatch={handleQuickPlayMatch}
+        />
+      )}
 
     </div>
   );
