@@ -13,6 +13,7 @@ const MAX_ZOOM = 5;
 const MIN_ZOOM = 0.05;
 const TAP_SLOP = 6;
 const HOME_CITY_ZOOM = 2.48;
+const GUIDE_KEY = "vyuruta_map_guide_seen";
 
 function defaultCityName(territory, index) {
   const realmTerritories = territories.filter(
@@ -88,6 +89,22 @@ function clampView({ x, y, z }, vw, vh, minZoom) {
   };
 }
 
+function readGuideSeen() {
+  try {
+    return window.localStorage.getItem(GUIDE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeGuideSeen() {
+  try {
+    window.localStorage.setItem(GUIDE_KEY, "1");
+  } catch {
+    /* storage unavailable, ignore */
+  }
+}
+
 function TerritoryMap({
   player,
   owners = {},
@@ -120,6 +137,7 @@ function TerritoryMap({
   );
   const [citySearch, setCitySearch] = useState("");
   const [citySearchError, setCitySearchError] = useState("");
+  const [guideOpen, setGuideOpen] = useState(() => !readGuideSeen());
   const [panelMode, setPanelMode] = useState(() =>
     new URLSearchParams(location.search).get("panel") === "battles"
       ? "battles"
@@ -314,6 +332,11 @@ function TerritoryMap({
     } else {
       fitOverview();
     }
+  };
+
+  const closeGuide = () => {
+    setGuideOpen(false);
+    writeGuideSeen();
   };
 
   const smoothApply = useCallback((next) => {
@@ -590,6 +613,99 @@ function TerritoryMap({
       </form>
       {citySearchError && (
         <p className="map-search-error" role="alert">{citySearchError}</p>
+      )}
+
+      {/* ---------- HOW TO PLAY (left info panel) ---------- */}
+      {guideOpen ? (
+        <aside
+          className="map-guide"
+          onPointerDown={stop}
+          onClick={stop}
+          aria-label="How to play"
+        >
+          <div className="map-guide-head">
+            <div>
+              <p className="map-guide-kicker">FIELD GUIDE</p>
+              <h2>How to play</h2>
+            </div>
+            <button
+              className="map-guide-close"
+              type="button"
+              onClick={closeGuide}
+              aria-label="Close guide"
+            >
+              ✕
+            </button>
+          </div>
+
+          <ol className="map-guide-steps">
+            <li>
+              <span className="guide-num">1</span>
+              <p>
+                <strong>Find your city.</strong> The glowing, pulsing one is
+                yours. Tap any other city to see who rules it.
+              </p>
+            </li>
+            <li>
+              <span className="guide-num">2</span>
+              <p>
+                <strong>Challenge a ruler.</strong> Tap <em>Send battle request</em>,
+                pick a difficulty and a time slot, then send it.
+              </p>
+            </li>
+            <li>
+              <span className="guide-num">3</span>
+              <p>
+                <strong>Wait for a reply.</strong> They can accept or reject.
+                Once accepted, join the battle at the agreed time from
+                <em> Battle requests</em>.
+              </p>
+            </li>
+          </ol>
+
+          <p className="map-guide-subhead">WHO WINS?</p>
+          <ul className="map-guide-rules">
+            <li>
+              <span className="rule-dot rule-win" />
+              <p>
+                <strong>Only one player shows up:</strong> they win, even if the
+                other accepted.
+              </p>
+            </li>
+            <li>
+              <span className="rule-dot rule-late" />
+              <p>
+                <strong>Neither is there when the timer starts:</strong> whoever
+                joins later wins.
+              </p>
+            </li>
+            <li>
+              <span className="rule-dot rule-win" />
+              <p>
+                <strong>Both join:</strong> whoever solves it wins and takes the
+                treasure.
+              </p>
+            </li>
+            <li>
+              <span className="rule-dot rule-none" />
+              <p>
+                <strong>Both fail to solve it:</strong> nobody gets any treasure.
+              </p>
+            </li>
+          </ul>
+        </aside>
+      ) : (
+        <button
+          className="map-guide-toggle"
+          type="button"
+          onPointerDown={stop}
+          onClick={(e) => {
+            e.stopPropagation();
+            setGuideOpen(true);
+          }}
+        >
+          <span>?</span> How to play
+        </button>
       )}
 
       <div
