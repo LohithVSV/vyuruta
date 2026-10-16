@@ -668,8 +668,8 @@ function TerritoryMap({
             <li>
               <span className="rule-dot rule-win" />
               <p>
-                <strong>Only one player shows up:</strong> they win, even if the
-                other accepted.
+                <strong>Both Join:</strong> whoever solves it wins and takes the
+                treasure.
               </p>
             </li>
             <li>
@@ -682,8 +682,8 @@ function TerritoryMap({
             <li>
               <span className="rule-dot rule-win" />
               <p>
-                <strong>Both join:</strong> whoever solves it wins and takes the
-                treasure.
+                <strong>Only one player shows up:</strong> they win, even if the
+                other accepted but failed to join.
               </p>
             </li>
             <li>
