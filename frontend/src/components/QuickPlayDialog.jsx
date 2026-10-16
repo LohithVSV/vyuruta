@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
 
 const DIFFICULTIES = [
@@ -6,6 +6,8 @@ const DIFFICULTIES = [
   { value: 2, label: "Medium", detail: "Balanced" },
   { value: 3, label: "Difficult", detail: "Challenge" },
 ];
+
+const START_COUNTDOWN = 3;
 
 function formatElapsed(seconds) {
   const minutes = Math.floor(seconds / 60);
@@ -21,12 +23,20 @@ export default function QuickPlayDialog({ onClose, onMatch }) {
   const [now, setNow] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [battleId, setBattleId] = useState(null);
+  const [countdown, setCountdown] = useState(START_COUNTDOWN);
+  const matchedRef = useRef(false);
 
   const applyQueueStatus = useCallback((queue) => {
+    if (matchedRef.current) return;
     setOnlinePlayers(queue.online_players);
     if (queue.status === "matched") {
       if (queue.battle_id != null) {
-        onMatch(queue.battle_id);
+        matchedRef.current = true;
+        setError("");
+        setBattleId(queue.battle_id);
+        setCountdown(START_COUNTDOWN);
+        setView("matched");
       } else {
         setError("The match was created, but its battle room could not be found.");
       }
@@ -41,7 +51,7 @@ export default function QuickPlayDialog({ onClose, onMatch }) {
     }
     setQueuedAt(null);
     setView("ready");
-  }, [onMatch]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +97,17 @@ export default function QuickPlayDialog({ onClose, onMatch }) {
     };
   }, [applyQueueStatus, view]);
 
+  // Match found: count down, then enter the battle
+  useEffect(() => {
+    if (view !== "matched" || battleId == null) return undefined;
+    if (countdown <= 0) {
+      onMatch(battleId);
+      return undefined;
+    }
+    const timeout = window.setTimeout(() => setCountdown((value) => value - 1), 1000);
+    return () => window.clearTimeout(timeout);
+  }, [view, battleId, countdown, onMatch]);
+
   const leaveQueue = async () => {
     setBusy(true);
     setError("");
@@ -103,14 +124,14 @@ export default function QuickPlayDialog({ onClose, onMatch }) {
   };
 
   const handleClose = async () => {
-    if (busy) return;
+    if (busy || view === "matched") return;
     if (view !== "ready" && !(await leaveQueue())) return;
     onClose();
   };
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if (event.key === "Escape" && !busy) {
+      if (event.key === "Escape" && !busy && view !== "matched") {
         event.preventDefault();
         void handleClose();
       }
@@ -151,39 +172,57 @@ export default function QuickPlayDialog({ onClose, onMatch }) {
         aria-labelledby="quick-play-title"
         aria-describedby="quick-play-description"
       >
-        <button
-          className="quick-play-dialog__close"
-          type="button"
-          onClick={() => void handleClose()}
-          disabled={busy}
-          aria-label="Close Quick Play"
-        >
-          ×
-        </button>
+        {view !== "matched" && (
+          <button
+            className="quick-play-dialog__close"
+            type="button"
+            onClick={() => void handleClose()}
+            disabled={busy}
+            aria-label="Close Quick Play"
+          >
+            ×
+          </button>
+        )}
 
         <div className="quick-play-dialog__eyebrow">
           <span className="quick-play-dialog__eyebrow-mark" />
           REALM MATCHMAKING
         </div>
         <h2 id="quick-play-title">
-          {view === "searching" ? "Finding your rival" : "Quick Play"}
+          {view === "matched"
+            ? "Match found"
+            : view === "searching"
+              ? "Finding your rival"
+              : "Quick Play"}
         </h2>
         <p className="quick-play-dialog__intro" id="quick-play-description">
-          {view === "searching"
-            ? "Stay ready. We’ll take you straight into the arena when a player joins."
-            : "Choose your challenge and get matched with another player searching at the same level."}
+          {view === "matched"
+            ? "Your opponent is ready. Prepare yourself."
+            : view === "searching"
+              ? "Stay ready. We’ll take you straight into the arena when a player joins."
+              : "Choose your challenge and get matched with another player searching at the same level."}
         </p>
 
-        <div className="quick-play-dialog__online">
-          <span className="quick-play-dialog__online-dot" />
-          <span>
-            <strong>{onlinePlayers}</strong>{" "}
-            {onlinePlayers === 1 ? "player searching" : "players searching"}
-          </span>
-          <span className="quick-play-dialog__live">LIVE</span>
-        </div>
+        {view === "matched" ? (
+          <div className="quick-play-match">
+            <p className="quick-play-match__start" aria-live="polite">
+              {countdown > 0
+                ? `Battle starts in ${countdown}...`
+                : "Entering the arena..."}
+            </p>
+          </div>
+        ) : (
+          <div className="quick-play-dialog__online">
+            <span className="quick-play-dialog__online-dot" />
+            <span>
+              <strong>{onlinePlayers}</strong>{" "}
+              {onlinePlayers === 1 ? "player searching" : "players searching"}
+            </span>
+            <span className="quick-play-dialog__live">LIVE</span>
+          </div>
+        )}
 
-        {view === "searching" ? (
+        {view === "searching" && (
           <div className="quick-play-search">
             <div className="quick-play-search__timer" aria-live="off">
               <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -205,7 +244,9 @@ export default function QuickPlayDialog({ onClose, onMatch }) {
               {busy ? "Cancelling..." : "Cancel search"}
             </button>
           </div>
-        ) : (
+        )}
+
+        {(view === "checking" || view === "ready") && (
           <>
             <fieldset
               className="quick-play-difficulties"
@@ -249,9 +290,11 @@ export default function QuickPlayDialog({ onClose, onMatch }) {
         )}
 
         {error && <p className="quick-play-dialog__error" role="alert">{error}</p>}
-        <p className="quick-play-dialog__footnote">
-          Matches are created as soon as two players choose the same difficulty.
-        </p>
+        {view !== "matched" && (
+          <p className="quick-play-dialog__footnote">
+            Matches are created as soon as two players choose the same difficulty.
+          </p>
+        )}
       </section>
     </div>
   );
